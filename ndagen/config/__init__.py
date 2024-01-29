@@ -14,3 +14,4 @@ def tasks():
         __dir__,
         'tasks.yaml'
     )
+    return conf
