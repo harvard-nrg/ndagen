@@ -58,9 +58,10 @@ def main():
 def find_first_non_alphanumeric(string):
     match = re.search(r'\W', string)
     if match:
-        return match.group()
+        index = match.start()
+        return input_string[:index]
     else:
-        return None
+        return input_string
 
 
 def add_key_file_info():
