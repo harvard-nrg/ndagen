@@ -7,6 +7,7 @@ import pandas as pd
 from pathlib import Path
 from argparse import ArgumentParser
 import logging
+import yaml
 import re
 import ndagen.config as config
 
@@ -25,9 +26,13 @@ def main():
         help='YAML file of all tasks and their corresponding NDA number')
     args = parser.parse_args()
 
-    all_variables = args.nda_config['nda_variables']
+    nda_config = yaml.safe_load(open(args.nda_config))
 
-    tasks = args.task_list['tasks']
+    task_list = yaml.safe_load(open(args.task_list))
+
+    all_variables = nda_config['nda_variables']
+
+    tasks = task_list['tasks']
 
     # create final dataframe that will be added to as we go
     final_dataframe = pd.DataFrame({})
