@@ -9,3 +9,8 @@ def spreadsheet_variables():
         'variables.yaml'
     )
     return conf
+def tasks():
+    conf = os.path.join(
+        __dir__,
+        'tasks.yaml'
+    )

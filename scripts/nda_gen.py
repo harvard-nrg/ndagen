@@ -8,6 +8,7 @@ from pathlib import Path
 from argparse import ArgumentParser
 import logging
 import re
+import ndagen.config as config
 
 logger = logging.getLogger('nda_gen')
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +19,15 @@ def main():
         help='Path to NIFTI Files to be uploaded')
     parser.add_argument('--key-file', type=Path,
         help='Path to subject key csv file')
+    parser.add_argument('--nda-config', default=config.spreadsheet_variables(),
+        help='YAML file with all the column names for the NDA Spreadsheet')
+    parser.add_argument('--task-list', default=config.tasks(),
+        help='YAML file of all tasks and their corresponding NDA number')
     args = parser.parse_args()
+
+    all_variables = args.nda_config['nda_variables']
+
+    tasks = args.task_list['tasks']
 
     tasks = {
     'EPROJ': 2337,
@@ -31,6 +40,8 @@ def main():
     'VODDK': 2353,
     'REST': 2349
     }
+
+    
 
     master_list = [
     'subjectkey',
