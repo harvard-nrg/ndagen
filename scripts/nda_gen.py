@@ -10,6 +10,7 @@ import logging
 import yaml
 import re
 import ndagen.config as config
+import os
 
 logger = logging.getLogger('nda_gen')
 logging.basicConfig(level=logging.INFO)
