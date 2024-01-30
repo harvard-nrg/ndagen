@@ -7,14 +7,31 @@ nda_variables:
   - comments_misc
   - image_file
   - image_thumbnail_file
+  - image_description
+  - experiment_id
+  - scan_type
   - scan_object
   - image_file_format
-  - experiment_id
-  - image_description
-  - mri_field_of_view_pd
-  - scan_type
   - data_file2
   - data_file2_type
+  - image_modality
+  - scanner_manufacturer_pd
+  - scanner_type_pd
+  - scanner_software_versions_pd
+  - magnetic_field_strength
+  - mri_repetition_time_pd
+  - mri_echo_time_pd
+  - flip_angle
+  - acquisition_matrix
+  - mri_field_of_view_pd
+  - patient_position
+  - photomet_interpret
+  - receive_coil
+  - transmit_coil
+  - transformation_performed
+  - transformation_type
+  - image_history
+  - image_num_dimensions
   - image_extent1
   - image_extent2
   - image_extent3
@@ -33,7 +50,6 @@ nda_variables:
   - image_resolution4
   - image_slice_thickness
   - image_orientation
-  - image_num_dimensions
   - qc_outcome
   - qc_description
   - qc_fail_quest_reason
@@ -90,19 +106,3 @@ nda_variables:
   - type_of_microscopy
   - excitation_wavelength
   - year_mta
-  - image_modality
-  - scanner_manufacturer_pd
-  - scanner_type_pd
-  - scanner_software_versions_pd
-  - magnetic_field_strength
-  - mri_repetition_time_pd
-  - mri_echo_time_pd
-  - flip_angle
-  - acquisition_matrix
-  - patient_position
-  - photomet_interpret
-  - receive_coil
-  - transmit_coil
-  - transformation_performed
-  - transformation_type
-  - image_history
