@@ -115,7 +115,7 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     current_row.append(json_data['EchoTime']) # for mri_echo_time_pd column
     current_row.append(json_data['FlipAngle']) # for flip_angle column
     current_row.append(json_data['AcquisitionMatrixPE']) # for acquisition_matrix column
-    current_row.append(get_field_of_view(file)) # for mri_field_of_view_pd column
+    current_row.append(get_field_of_view(json_data)) # for mri_field_of_view_pd column
 
 
     return current_row
