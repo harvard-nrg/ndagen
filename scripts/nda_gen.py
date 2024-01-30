@@ -58,6 +58,10 @@ def add_key_file_info(args, subjectkey):
     """
     Gather info from the key file for this file
     """
+
+    print(args.key_file)
+    print(type(args.key_file))
+    sys.exit()
     key_row = args.key_file.index[args.key_file['subjectkey'] == subjectkey[0]].tolist()[0]
 
     print(key_row)
