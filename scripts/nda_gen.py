@@ -50,22 +50,29 @@ def main():
 
     for file in source_files:
 
-        subjectkey = find_first_non_alphanumeric(file)
+        subjectkey = keep_all_before_non_alphanumeric(file)
 
-        add_key_file_info(subjectkey, key_file)
+        add_key_file_info(subjectkey, key_file, file, final_dataframe)
+
+        data.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
 
 
 
-def add_key_file_info(subjectkey, key_file):
+def add_key_file_info(subjectkey, key_file, orig_file, final_dataframe):
     """
     Gather info from the key file for this file
     """
 
     key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
 
-    print(key_row)
+    final_dataframe['subjectkey'] = subjectkey
+    final_dataframe['src_subject_id'] = key_file.at[key_row, 'src_subject_id']
+    final_dataframe['interview_date'] = key_file.at[key_row, 'interview_date']
+    final_dataframe['interview_age'] = key_file.at[key_row, 'interview_age']
+    final_dataframe['sex'] = key_file.at[key_row, 'sex']
+    final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(file)
 
-def find_first_non_alphanumeric(string):
+def keep_all_before_non_alphanumeric(string):
     match = re.search(r'\W', string)
     if match:
         index = match.start()
@@ -73,6 +80,13 @@ def find_first_non_alphanumeric(string):
     else:
         return string
 
+def keep_after_first_non_alphanumeric(input_string):
+    pattern = r'[^a-zA-Z0-9](.*)$'
+    match = re.search(pattern, input_string)
+    if match:
+        return match.group(1)
+    else:
+        return input_string
 
 
 
