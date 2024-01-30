@@ -72,6 +72,10 @@ def add_key_file_info(subjectkey, key_file, orig_file, final_dataframe):
     final_dataframe['sex'] = key_file.at[key_row, 'sex']
     final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(orig_file)
 
+    print(final_dataframe)
+
+    sys.exit()
+
     return final_dataframe
 
 def keep_all_before_non_alphanumeric(string):
