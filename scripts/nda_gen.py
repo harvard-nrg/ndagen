@@ -54,7 +54,7 @@ def main():
 
         add_key_file_info(subjectkey, key_file, file, final_dataframe)
 
-        data.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
+        final_dataframe.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
 
 
 
