@@ -48,6 +48,10 @@ def main():
 
     for file in source_files:
 
+        print(file)
+
+        sys.exit()
+
         subjectkey = find_first_non_alphanumeric(file)
 
         add_key_file_info(args, subjectkey)
