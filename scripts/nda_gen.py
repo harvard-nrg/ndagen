@@ -61,7 +61,7 @@ def add_key_file_info(subjectkey, key_file):
     Gather info from the key file for this file
     """
 
-    key_row = key_file.index[key_file['subjectkey'] == value].tolist()[0]
+    key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
 
     print(key_row)
 
