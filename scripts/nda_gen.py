@@ -94,6 +94,9 @@ def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
     return current_row
 
 def add_image_info(subjectkey, file, current_row, args, tasks):
+    with open(file) as f:
+        json_data = json.load(f)
+
     current_row.append(file.replace('.nii.gz', '.json')) # for image_file column
     current_row.append('') # for image_thumbnail_file column
     current_row.append(get_image_description(file, args.source_files)) # for image_description column
@@ -104,14 +107,14 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     current_row.append('') # for data_file2 column
     current_row.append('') # for data_file2_type column
     current_row.append('MRI') # for image_modality column
-    current_row.append(file['Manufacturer']) # for scanner_manufacturer_pd column
-    current_row.append(file['ManufacturersModelName']) # for scanner_type_pd column
-    current_row.append(file['SoftwareVersions']) # for scanner_software_versions_pd column
-    current_row.append(file['MagneticFieldStrength']) # for magnetic_field_strength column
-    current_row.append(file['RepetitionTime']) # for mri_repetition_time_pd column
-    current_row.append(file['EchoTime']) # for mri_echo_time_pd column
-    current_row.append(file['FlipAngle']) # for flip_angle column
-    current_row.append(file['AcquisitionMatrixPE']) # for acquisition_matrix column
+    current_row.append(json_data['Manufacturer']) # for scanner_manufacturer_pd column
+    current_row.append(json_data['ManufacturersModelName']) # for scanner_type_pd column
+    current_row.append(json_data['SoftwareVersions']) # for scanner_software_versions_pd column
+    current_row.append(json_data['MagneticFieldStrength']) # for magnetic_field_strength column
+    current_row.append(json_data['RepetitionTime']) # for mri_repetition_time_pd column
+    current_row.append(json_data['EchoTime']) # for mri_echo_time_pd column
+    current_row.append(json_data['FlipAngle']) # for flip_angle column
+    current_row.append(json_data['AcquisitionMatrixPE']) # for acquisition_matrix column
     current_row.append(get_field_of_view(file)) # for mri_field_of_view_pd column
 
 
