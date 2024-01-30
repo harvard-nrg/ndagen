@@ -52,7 +52,7 @@ def main():
 
         subjectkey = keep_all_before_non_alphanumeric(file)
 
-        add_key_file_info(subjectkey, key_file, file, final_dataframe)
+        final_dataframe = add_key_file_info(subjectkey, key_file, file, final_dataframe)
 
         final_dataframe.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
 
@@ -71,6 +71,8 @@ def add_key_file_info(subjectkey, key_file, orig_file, final_dataframe):
     final_dataframe['interview_age'] = key_file.at[key_row, 'interview_age']
     final_dataframe['sex'] = key_file.at[key_row, 'sex']
     final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(orig_file)
+
+    return final_dataframe
 
 def keep_all_before_non_alphanumeric(string):
     match = re.search(r'\W', string)
