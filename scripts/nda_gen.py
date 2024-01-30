@@ -42,7 +42,9 @@ def main():
     # create final dataframe that will be added to as we go
     final_dataframe = pd.DataFrame(columns=[all_variables])
 
-    print(final_dataframe)
+    final_dataframe.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
+
+    sys.exit()
 
     # load in all the source file names
 
@@ -60,7 +62,7 @@ def main():
 
 
 
-def add_key_file_info():
+def add_key_file_info(subjectkey):
     """
     Gather info from the key file for this file
     """
