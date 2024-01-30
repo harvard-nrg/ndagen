@@ -27,6 +27,10 @@ def main():
         help='YAML file of all tasks and their corresponding NDA number')
     args = parser.parse_args()
 
+    """
+    This script will go row by row in building the final csv/dataframe. Every row represents a nifti file that will be uploaded
+    """
+
     nda_config = yaml.safe_load(open(args.nda_config))
 
     task_list = yaml.safe_load(open(args.task_list))
@@ -36,7 +40,9 @@ def main():
     tasks = task_list['tasks']
 
     # create final dataframe that will be added to as we go
-    final_dataframe = pd.DataFrame({})
+    final_dataframe = pd.DataFrame(columns=[all_variables])
+
+    print(final_dataframe)
 
     # load in all the source file names
 
@@ -46,15 +52,20 @@ def main():
 
         subjectkey = find_first_non_alphanumeric(file)
 
-        print(subjectkey)
+        ## test out adding value to subjectkey
 
-        sys.exit()
+        #final_dataframe
 
         add_key_file_info(subjectkey)
 
 
 
-    
+def add_key_file_info():
+    """
+    Gather info from the key file for this file
+    """
+    pass
+
 def find_first_non_alphanumeric(string):
     match = re.search(r'\W', string)
     if match:
@@ -64,8 +75,6 @@ def find_first_non_alphanumeric(string):
         return string
 
 
-def add_key_file_info():
-    pass
 
 
 
