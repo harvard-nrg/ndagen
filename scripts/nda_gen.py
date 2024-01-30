@@ -52,37 +52,34 @@ def main():
 
         subjectkey = keep_all_before_non_alphanumeric(file)
 
-        key_info = add_key_file_info(subjectkey, key_file, file)
+        current_row = []
 
-        final_dataframe.loc['subjectkey'] = key_info
+        current_row = add_key_file_info(subjectkey, key_file, file)
+
+        print(current_row)
+
+        sys.exit()
+
+        final_dataframe.loc[subjectkey] = current_row
 
         final_dataframe.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
 
 
 
-def add_key_file_info(subjectkey, key_file, orig_file, sub_row=[]):
+def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
     """
     Gather info from the key file for this file
     """
 
     key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
 
-    #final_dataframe['subjectkey'] = subjectkey
+    current_row.append(key_file.at[key_row, 'src_subject_id'])
+    current_row.append(key_file.at[key_row, 'interview_date'])
+    current_row.append(key_file.at[key_row, 'interview_age'])
+    current_row.append(key_file.at[key_row, 'sex'])
+    current_row.append(keep_after_first_non_alphanumeric(orig_file))
 
-    sub_row.append(key_file.at[key_row, 'src_subject_id'])
-    sub_row.append(key_file.at[key_row, 'interview_date'])
-    sub_row.append(key_file.at[key_row, 'interview_age'])
-    sub_row.append(key_file.at[key_row, 'sex'])
-    sub_row.append(keep_after_first_non_alphanumeric(orig_file))
-
-#    final_dataframe['src_subject_id'] = key_file.at[key_row, 'src_subject_id']
-#    final_dataframe['interview_date'] = key_file.at[key_row, 'interview_date']
-#    final_dataframe['interview_age'] = key_file.at[key_row, 'interview_age']
-#    final_dataframe['sex'] = key_file.at[key_row, 'sex']
-#    final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(orig_file)
-
-
-    return sub_row
+    return current_row
 
 def keep_all_before_non_alphanumeric(string):
     match = re.search(r'\W', string)
