@@ -39,6 +39,8 @@ def main():
 
     tasks = task_list['tasks']
 
+    key_file = pd.read_csv(args.key_file)
+
     # create final dataframe that will be added to as we go
     final_dataframe = pd.DataFrame(columns=[all_variables])
 
@@ -50,19 +52,15 @@ def main():
 
         subjectkey = find_first_non_alphanumeric(file)
 
-        add_key_file_info(args, subjectkey)
+        add_key_file_info(subjectkey, key_file)
 
 
 
-def add_key_file_info(args, subjectkey):
+def add_key_file_info(subjectkey, key_file):
     """
     Gather info from the key file for this file
     """
-
-    print(args.key_file)
-    print(type(args.key_file))
-    sys.exit()
-    key_row = args.key_file.index[args.key_file['subjectkey'] == subjectkey[0]].tolist()[0]
+    key_row = key_file.index[key_file['subjectkey'] == subjectkey[0]].tolist()[0]
 
     print(key_row)
 
