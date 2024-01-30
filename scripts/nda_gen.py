@@ -50,11 +50,11 @@ def main():
 
         subjectkey = find_first_non_alphanumeric(file)
 
-        add_key_file_info(subjectkey)
+        add_key_file_info(args, subjectkey)
 
 
 
-def add_key_file_info(subjectkey):
+def add_key_file_info(args, subjectkey):
     """
     Gather info from the key file for this file
     """
