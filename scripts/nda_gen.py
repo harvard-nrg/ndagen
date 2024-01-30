@@ -70,7 +70,7 @@ def add_key_file_info(subjectkey, key_file, orig_file, final_dataframe):
     final_dataframe['interview_date'] = key_file.at[key_row, 'interview_date']
     final_dataframe['interview_age'] = key_file.at[key_row, 'interview_age']
     final_dataframe['sex'] = key_file.at[key_row, 'sex']
-    final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(file)
+    final_dataframe['comments_misc'] = keep_after_first_non_alphanumeric(orig_file)
 
 def keep_all_before_non_alphanumeric(string):
     match = re.search(r'\W', string)
