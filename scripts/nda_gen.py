@@ -138,7 +138,7 @@ def get_scan_type(json_file, source_files_dir):
     else:
         return 'fMRI'
 
-def get_experiment_id(file):
+def get_experiment_id(file, tasks):
     for task in tasks.keys():
         if task in file:
             return tasks[task]
