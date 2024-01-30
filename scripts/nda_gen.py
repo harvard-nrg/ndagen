@@ -19,7 +19,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--source-files', type=Path,
         help='Path to NIFTI Files to be uploaded')
-    parser.add_argument('--key-file', type=Path,
+    parser.add_argument('--key-file',
         help='Path to subject key csv file')
     parser.add_argument('--nda-config', default=config.spreadsheet_variables(),
         help='YAML file with all the column names for the NDA Spreadsheet')
@@ -47,10 +47,6 @@ def main():
     source_files = [file for file in os.listdir(args.source_files) if file.endswith('.json')]
 
     for file in source_files:
-
-        print(file)
-
-        sys.exit()
 
         subjectkey = find_first_non_alphanumeric(file)
 
