@@ -42,10 +42,6 @@ def main():
     # create final dataframe that will be added to as we go
     final_dataframe = pd.DataFrame(columns=[all_variables])
 
-    final_dataframe.to_csv('/n/nrg_l3/Lab/users/dasay/nda/df_test.csv', index=False)
-
-    sys.exit()
-
     # load in all the source file names
 
     source_files = [file for file in os.listdir(args.source_files) if file.endswith('.json')]
@@ -53,10 +49,6 @@ def main():
     for file in source_files:
 
         subjectkey = find_first_non_alphanumeric(file)
-
-        ## test out adding value to subjectkey
-
-        #final_dataframe
 
         add_key_file_info(subjectkey)
 
@@ -66,7 +58,9 @@ def add_key_file_info(subjectkey):
     """
     Gather info from the key file for this file
     """
-    pass
+    key_row = args.key_file.index[args.key_file['subjectkey'] == subjectkey[0]].tolist()[0]
+
+    print(key_row)
 
 def find_first_non_alphanumeric(string):
     match = re.search(r'\W', string)
