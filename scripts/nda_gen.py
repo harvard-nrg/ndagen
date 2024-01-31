@@ -11,6 +11,7 @@ import yaml
 import re
 import ndagen.config as config
 import os
+from datetime import datetime
 
 logger = logging.getLogger('nda_gen')
 logging.basicConfig(level=logging.INFO)
@@ -88,7 +89,7 @@ def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
     key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
 
     current_row.append(key_file.at[key_row, 'src_subject_id']) # for src_subject_id column
-    current_row.append(key_file.at[key_row, 'interview_date']) # for interview_date column
+    current_row.append(validate_date(key_file.at[key_row, 'interview_date'])) # for interview_date column
     current_row.append(key_file.at[key_row, 'interview_age']) # for interview_age column
     current_row.append(key_file.at[key_row, 'sex']) # for sex column
     current_row.append(keep_after_first_non_alphanumeric(orig_file).replace('.json', '')) # for comments_misc column
@@ -135,7 +136,12 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     return current_row
 
 
-
+def validate_date(input_date):
+    try:
+        parsed_date = datetime.strptime(input_date, '%m-%d-%Y')
+    except ValueError:
+        print('The date on the key file csv is not in valid format. Please change it to MM-DD-YYYY format and try again. Exiting.')
+        sys.exit(1)
 
 def get_image_extent4(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
