@@ -91,7 +91,7 @@ def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
     current_row.append(key_file.at[key_row, 'interview_date']) # for interview_date column
     current_row.append(key_file.at[key_row, 'interview_age']) # for interview_age column
     current_row.append(key_file.at[key_row, 'sex']) # for sex column
-    current_row.append(keep_after_first_non_alphanumeric(orig_file)) # for comments_misc column
+    current_row.append(keep_after_first_non_alphanumeric(orig_file).replace('.json', '')) # for comments_misc column
 
     return current_row
 
@@ -148,7 +148,10 @@ def get_image_extent4(nifti_file, json_data):
 def get_image_extent3(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    return round(dimensions[0] * json_data['SliceThickness'])    
+    if 'T1' in json_data['SeriesDescription']:
+        return round(dimensions[0] * json_data['SliceThickness'])    
+    else:
+        return round(dimensions[2] * json_data['SliceThickness'])
 
 
 def get_image_extent2(nifti_file, json_data):
@@ -160,7 +163,11 @@ def get_image_extent2(nifti_file, json_data):
 def get_image_extent1(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    return round(dimensions[2] * json_data['SliceThickness'])
+    if 'T1' in json_data['SeriesDescription']:
+        return round(dimensions[2] * json_data['SliceThickness'])
+    else:
+        return round(dimensions[0] * json_data['SliceThickness'])
+
 
 
 def get_image_dimensions(nifti_file):
@@ -175,8 +182,6 @@ def add_reface_info(json, args):
             return args.reface_info
     else:
         return ''
-
-
 
 def get_field_of_view(json_file):
     dim1 = round((json_file['BaseResolution']) * (json_file['SliceThickness']))
