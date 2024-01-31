@@ -25,6 +25,8 @@ def main():
         help='YAML file with all the column names for the NDA Spreadsheet')
     parser.add_argument('--task-list', default=config.tasks(),
         help='YAML file of all tasks and their corresponding NDA number')
+    parser.add_argument('--reface-info',
+        help='Pass the name of the software used to reface T1w images')
     args = parser.parse_args()
 
     """
@@ -97,7 +99,7 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     with open(file) as f:
         json_data = json.load(f)
 
-    current_row.append(file.replace('.nii.gz', '.json')) # for image_file column
+    current_row.append(file.replace('.json', '.nii.gz')) # for image_file column
     current_row.append('') # for image_thumbnail_file column
     current_row.append(get_image_description(file, args.source_files)) # for image_description column
     current_row.append(get_experiment_id(file, tasks)) # for experiment_id column
@@ -116,9 +118,64 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     current_row.append(json_data['FlipAngle']) # for flip_angle column
     current_row.append(json_data['AcquisitionMatrixPE']) # for acquisition_matrix column
     current_row.append(get_field_of_view(json_data)) # for mri_field_of_view_pd column
-
+    current_row.append(json_data['PatientPosition']) # for patient_position column
+    current_row.append('MONOCHROME2') # for photomet_interpret column
+    current_row.append(json_data['ReceiveCoilName']) # for receive_coil column
+    current_row.append('Body') # for transmit_coil column
+    current_row.append('No') # for transformation_performed column
+    current_row.append('') # for transformation_type column
+    current_row.append(add_reface_info(json_data, args)) # for image_history column
+    current_row.append(get_image_dimensions(file.replace('.json', '.nii.gz'))) # for image_num_dimensions column
+    current_row.append(get_image_extent1(file.replace('.json', '.nii.gz'), json_data)) # for image_extent1 column
+    current_row.append(get_image_extent2(file.replace('.json', '.nii.gz'), json_data)) # for image_extent2 column
+    current_row.append(get_image_extent3(file.replace('.json', '.nii.gz'), json_data)) # for image_extent3 column    
+    current_row.append(get_image_extent4(file.replace('.json', '.nii.gz'), json_data)) # for image_extent4 column
+    current_row.append('Time')
 
     return current_row
+
+
+
+
+def get_image_extent4(nifti_file, json_data):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    if len(dimensions) > 3:
+        return round(dimensions[3] * json_data['RepetitionTime'])
+    else:
+        return ''    
+
+def get_image_extent3(nifti_file, json_data):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    return round(dimensions[0] * json_data['SliceThickness'])    
+
+
+def get_image_extent2(nifti_file, json_data):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    return round(dimensions[1] * json_data['SliceThickness'])
+
+
+def get_image_extent1(nifti_file, json_data):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    return round(dimensions[2] * json_data['SliceThickness'])
+
+
+def get_image_dimensions(nifti_file):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    return len(dimensions)
+
+
+def add_reface_info(json, args):
+    if args.reface_info:
+        if 'T1' in json['SeriesDescription']:
+            return args.reface_info
+    else:
+        return ''
+
 
 
 def get_field_of_view(json_file):
