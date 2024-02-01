@@ -243,8 +243,8 @@ def get_image_extent4(nifti_file, json_data):
 def get_image_extent3(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    if 'T1' in json_data['SeriesDescription']:
-        return round(dimensions[0] * json_data['SliceThickness'])    
+    if 'T1' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
+        return round(dimensions[0] * json_data['SliceThickness'])  
     else:
         return round(dimensions[2] * json_data['SliceThickness'])
 
@@ -258,7 +258,7 @@ def get_image_extent2(nifti_file, json_data):
 def get_image_extent1(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    if 'T1' in json_data['SeriesDescription']:
+    if 'T1' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
         return round(dimensions[2] * json_data['SliceThickness'])
     else:
         return round(dimensions[0] * json_data['SliceThickness'])
