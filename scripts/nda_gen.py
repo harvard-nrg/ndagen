@@ -333,7 +333,7 @@ def keep_after_first_non_alphanumeric(input_string):
 
 def add_row_to_final_df(subject_key, row_data, final_df):
 
-    final_df.loc[subjectkey] = row_data
+    final_df.loc[subject_key] = row_data
 
     return final_df
 
