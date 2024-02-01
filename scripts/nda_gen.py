@@ -79,10 +79,10 @@ def main():
         final_dataframe = add_row_to_final_df(subjectkey, current_row, final_dataframe)
 
 
-    write_dataframe_to_csv(final_dataframe, args)    
+    write_dataframe_to_csv(final_dataframe, args)
 
 
-def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
+def add_key_file_info(subjectkey, key_file, orig_file):
     """
     Gather info from the key file for this file
     """
