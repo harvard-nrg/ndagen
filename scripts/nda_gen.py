@@ -75,15 +75,6 @@ def main():
 
         current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
 
-        print(len(all_variables))
-
-        print(len(current_row))
-
-        sys.exit()
-
-
-
-
         final_dataframe = add_row_to_final_df(subjectkey, current_row, final_dataframe)
 
 
@@ -347,7 +338,10 @@ def add_row_to_final_df(subject_key, row_data, final_df):
     return final_df
 
 def write_dataframe_to_csv(final_df, args):
-    final_df.to_csv(args.source_files, index=False)
+    todays_date = datetime.today().strftime('%Y-%m-%d')
+    filename = f'nda_upload_file_{todays_date}.csv'
+    output_path = os.path.join(args.source_files, filename)
+    final_df.to_csv(output_path, index=False)
 
 
 
