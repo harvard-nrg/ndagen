@@ -29,6 +29,8 @@ def main():
         help='YAML file of all tasks and their corresponding NDA number')
     parser.add_argument('--reface-info',
         help='Pass the name of the software used to reface T1w images')
+    parser.add_argument('--echo-times',
+        help='Pass in list of echo times for T1 scans, if applicable (e.g. .00181,.00525,.00628)')
     args = parser.parse_args()
 
     """
@@ -116,7 +118,7 @@ def add_image_info(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.append(json_data['SoftwareVersions']) # for scanner_software_versions_pd column
     current_row.append(json_data['MagneticFieldStrength']) # for magnetic_field_strength column
     current_row.append(json_data['RepetitionTime']) # for mri_repetition_time_pd column
-    current_row.append(json_data['EchoTime']) # for mri_echo_time_pd column
+    current_row.append(get_echo_times(json_data, args))
     current_row.append(json_data['FlipAngle']) # for flip_angle column
     current_row.append(json_data['AcquisitionMatrixPE']) # for acquisition_matrix column
     current_row.append(get_field_of_view(json_data)) # for mri_field_of_view_pd column
@@ -161,6 +163,12 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.extend(['' for _ in range(32)]) # for the final 32 columns, starting with procdate and endign with year_mta
 
     return current_row
+
+def get_echo_times(json_data, args):
+    if args.echo_times:
+        return args.echo_times
+    else:
+        return json_data['EchoTime']
 
 def get_slice_timing(json_data):
     try:
@@ -335,8 +343,7 @@ def keep_after_first_non_alphanumeric(input_string):
 
 def add_row_to_final_df(subject_key, row_data, final_df):
 
-    print(len(row_data))
-    print(len(final_df.columns))
+    print(f'Adding data for scan {row_data[6]}')
 
     final_df.loc[len(final_df.index)] = row_data
 
