@@ -74,7 +74,7 @@ def main():
         # add remaining variables/columns
 
         current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
-        
+
 
         final_dataframe = add_row_to_final_df(subjectkey, current_row, final_dataframe)
 
@@ -336,7 +336,7 @@ def keep_after_first_non_alphanumeric(input_string):
 def add_row_to_final_df(subject_key, row_data, final_df):
 
     print(len(row_data))
-    print(len(final_dataframe.columns))
+    print(len(final_df.columns))
 
     final_df.loc[len(final_df.index)] = row_data
 
