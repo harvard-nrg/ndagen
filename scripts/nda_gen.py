@@ -175,7 +175,7 @@ def get_slice_timing(json_data):
 
 def find_session(file):
     pattern = r'sess?(\d*)'
-    match = re.search(pattern, input_string, re.IGNORECASE)
+    match = re.search(pattern, file, re.IGNORECASE)
     if match:
         return match.group(0)
     else:
