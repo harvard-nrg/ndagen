@@ -165,8 +165,11 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     return current_row
 
 def get_echo_times(json_data, args):
-    if args.echo_times:
-        return args.echo_times
+    if 'T1' in json_data['SeriesDescription']:
+        if args.echo_times:
+            return args.echo_times
+        else:
+            return json_data['EchoTime']
     else:
         return json_data['EchoTime']
 
