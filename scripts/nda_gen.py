@@ -75,6 +75,10 @@ def main():
 
         current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
 
+        print(len(current_row))
+        print(len(all_variables))
+        sys.exit()
+
         final_dataframe = add_row_to_final_df(subjectkey, current_row, final_dataframe)
 
 
