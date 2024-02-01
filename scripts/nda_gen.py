@@ -12,6 +12,7 @@ import re
 import ndagen.config as config
 import os
 from datetime import datetime
+import numpy as np
 
 logger = logging.getLogger('nda_gen')
 logging.basicConfig(level=logging.INFO)
@@ -61,12 +62,18 @@ def main():
 
         current_row = []
 
+        nifti_file = file.replace('.json', '.nii.gz')
+
         # get column info from the input key file
         current_row = add_key_file_info(subjectkey, key_file, file)
 
         # add the image info
 
-        current_row = add_image_info(subjectkey, file, current_row, args, tasks)
+        current_row = add_image_info(subjectkey, file, current_row, args, tasks, nifti_file)
+
+        # add remaining variables/columns
+
+        current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
 
         print(current_row)
 
@@ -96,19 +103,18 @@ def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
 
     return current_row
 
-def add_image_info(subjectkey, file, current_row, args, tasks):
+def add_image_info(subjectkey, file, current_row, args, tasks, nifti_file):
     with open(file) as f:
         json_data = json.load(f)
 
-    current_row.append(file.replace('.json', '.nii.gz')) # for image_file column
+    current_row.append(nifti_file) # for image_file column
     current_row.append('') # for image_thumbnail_file column
     current_row.append(get_image_description(file, args.source_files)) # for image_description column
     current_row.append(get_experiment_id(file, tasks)) # for experiment_id column
     current_row.append(get_scan_type(file, args.source_files)) # for scan_type column
     current_row.append('Live') # for scan_object column
     current_row.append('NIFTI') # for image_file_format column
-    current_row.append('') # for data_file2 column
-    current_row.append('') # for data_file2_type column
+    current_row.extend(['','']) # for data_file2 and data_file2_type columns
     current_row.append('MRI') # for image_modality column
     current_row.append(json_data['Manufacturer']) # for scanner_manufacturer_pd column
     current_row.append(json_data['ManufacturersModelName']) # for scanner_type_pd column
@@ -126,15 +132,102 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
     current_row.append('No') # for transformation_performed column
     current_row.append('') # for transformation_type column
     current_row.append(add_reface_info(json_data, args)) # for image_history column
-    current_row.append(get_image_dimensions(file.replace('.json', '.nii.gz'))) # for image_num_dimensions column
-    current_row.append(get_image_extent1(file.replace('.json', '.nii.gz'), json_data)) # for image_extent1 column
-    current_row.append(get_image_extent2(file.replace('.json', '.nii.gz'), json_data)) # for image_extent2 column
-    current_row.append(get_image_extent3(file.replace('.json', '.nii.gz'), json_data)) # for image_extent3 column    
-    current_row.append(get_image_extent4(file.replace('.json', '.nii.gz'), json_data)) # for image_extent4 column
+    current_row.append(get_image_dimensions(nifti_file)) # for image_num_dimensions column
+    current_row.append(get_image_extent1(nifti_file, json_data)) # for image_extent1 column
+    current_row.append(get_image_extent2(nifti_file, json_data)) # for image_extent2 column
+    current_row.append(get_image_extent3(nifti_file, json_data)) # for image_extent3 column    
+    current_row.append(get_image_extent4(nifti_file, json_data)) # for image_extent4 column
     current_row.append('Time')
 
     return current_row
 
+def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
+    with open(file) as f:
+        json_data = json.load(f)
+
+    current_row.extend(['','']) # for image_extent5 and extent5_type columns
+    current_row.extend(['Millimeters','Millimeters','Millimeters']) # for image_unit1, image_unit2 and image_unit3 columns
+    current_row.append(get_image_unit4(nifti_file)) # for image_unit4 column
+    current_row.append('') # image_unit5 column
+    current.row.extend([json_data['SliceThickness'], json_data['SliceThickness'], json_data['SliceThickness']]) # for image_resolution1, image_resolution2 and image_resolution3 columns
+    current_row.append(get_image_resolution4(nifti_file)) # for image_resolution4 column
+    current_row.append(json_data['SliceThickness']) # for image_slice_thickness column
+    current_row.append(get_image_orientation(nifti_file)) # for image_orientation column
+    current_row.extend(['' for _ in range(12)]) # for qc_outcome, qc_description, qc_fail_quest_reason, decay_correction, frame_end_times, frame_end_unit, frame_start_times, frame_start_unit, pet_isotope pet_tracer, time_diff_inject_to_image and time_diff_units columns
+    current_row.append(json_data['PulseSequenceDetails']) # for pulse_seq column
+    current_row.append('') # for slice_acquisition column
+    current_row.append(get_software(json_data)) # for software_preproc column
+    current_row.extend(['' for _ in range(2)]) # for study and week columns
+    current_row.append(get_task_name(file, tasks)) # for experiment_description column
+    current_row.append(find_session(file)) # for visit column
+    current_row.append(get_slice_timing(json_data)) # for slice_timing column
+    current_row.extend(['' for _ in range(3)]) # for bvek_bval_files, bvecfile, bvalfile columns
+    current_row.append(json_data['DeviceSerialNumber']) # for deviceserialnumber column
+    current_row.extend(['' for _ in range(32)]) # for the final 32 columns, starting with procdate and endign with year_mta
+
+    return current_row
+
+def get_slice_timing(json_data):
+    try:
+        return json_data['SliceTiming']
+    except:
+        return ''
+
+def find_session(file):
+    pattern = r'sess?(\d*)'
+    match = re.search(pattern, input_string, re.IGNORECASE)
+    if match:
+        return match.group(0)
+    else:
+        return None
+
+def get_task_name(file, tasks):
+    for task in tasks:
+        if task in file:
+            return task
+        else:
+            return ''
+
+def get_software(json_data):
+    conversion_software = json_data['ConversionSoftware']
+    software_version = json_data['ConversionSoftwareVersion']
+
+    return f'{conversion_software} {software_version}'
+
+def get_image_orientation(nifti_file):
+    affine_matrix = nib.load(nifti_file_path).affine
+    rotation_matrix = affine_matrix[:3, :3]
+    x_axis, y_axis, z_axis = rotation_matrix[:, 0], rotation_matrix[:, 1], rotation_matrix[:, 2]
+    axial_threshold = 0.99
+    coronal_threshold = 0.99
+    if np.dot(z_axis, np.array([0, 0, 1])) > axial_threshold:
+        image_view = "Axial"
+    elif np.dot(y_axis, np.array([0, 1, 0])) > coronal_threshold:
+        image_view = "Coronal"
+    else:
+        image_view = "Sagittal"
+
+    return image_view
+
+def get_image_resolution4(nifti_file):
+    if check_for_functional(nifti_file):
+        return 1
+    else:
+        return ''
+
+def get_image_unit4(nifti_file):
+    if check_for_functional(nifti_file):
+        return 'Seconds'
+    else:
+        return ''
+
+def check_for_functional(nifti_file):
+    nifti_img = nib.load(nifti_file)
+    dimensions = nifti_img.header.get_data_shape()
+    if len(dimensions) > 3:
+        return True
+    else:
+        return False  
 
 def validate_date(input_date):
     try:
