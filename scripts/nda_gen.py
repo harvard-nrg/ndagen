@@ -149,7 +149,7 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.extend(['Millimeters','Millimeters','Millimeters']) # for image_unit1, image_unit2 and image_unit3 columns
     current_row.append(get_image_unit4(nifti_file)) # for image_unit4 column
     current_row.append('') # image_unit5 column
-    current.row.extend([json_data['SliceThickness'], json_data['SliceThickness'], json_data['SliceThickness']]) # for image_resolution1, image_resolution2 and image_resolution3 columns
+    current_row.extend([json_data['SliceThickness'], json_data['SliceThickness'], json_data['SliceThickness']]) # for image_resolution1, image_resolution2 and image_resolution3 columns
     current_row.append(get_image_resolution4(nifti_file)) # for image_resolution4 column
     current_row.append(json_data['SliceThickness']) # for image_slice_thickness column
     current_row.append(get_image_orientation(nifti_file)) # for image_orientation column
