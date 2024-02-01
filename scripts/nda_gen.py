@@ -139,7 +139,7 @@ def add_image_info(subjectkey, file, current_row, args, tasks):
 def validate_date(input_date):
     try:
         parsed_date = datetime.strptime(input_date, '%m/%d/%Y')
-        return parsed_date
+        return input_date
     except ValueError:
         print('The date on the key file csv is not in valid format. Please change it to MM-DD-YYYY format and try again. Exiting.')
         sys.exit(1)
