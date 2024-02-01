@@ -88,6 +88,7 @@ def add_key_file_info(subjectkey, key_file, orig_file, current_row=[]):
 
     key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
 
+    current_row.append(subjectkey)
     current_row.append(key_file.at[key_row, 'src_subject_id']) # for src_subject_id column
     current_row.append(validate_date(key_file.at[key_row, 'interview_date'])) # for interview_date column
     current_row.append(key_file.at[key_row, 'interview_age']) # for interview_age column
