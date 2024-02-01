@@ -65,7 +65,7 @@ def main():
         nifti_file = file.replace('.json', '.nii.gz')
 
         # get column info from the input key file
-        current_row = add_key_file_info(subjectkey, key_file, file)
+        current_row = add_key_file_info(subjectkey, key_file, file, current_row)
 
         # add the image info
 
@@ -82,7 +82,7 @@ def main():
     write_dataframe_to_csv(final_dataframe, args)
 
 
-def add_key_file_info(subjectkey, key_file, orig_file):
+def add_key_file_info(subjectkey, key_file, orig_file, current_row):
     """
     Gather info from the key file for this file
     """
