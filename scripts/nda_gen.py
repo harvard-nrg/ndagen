@@ -75,7 +75,9 @@ def main():
 
         current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
 
-        print(current_row)
+        print(len(all_variables))
+
+        print(len(current_row))
 
         sys.exit()
 
