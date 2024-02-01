@@ -195,7 +195,7 @@ def get_software(json_data):
     return f'{conversion_software} {software_version}'
 
 def get_image_orientation(nifti_file):
-    affine_matrix = nib.load(nifti_file_path).affine
+    affine_matrix = nib.load(nifti_file).affine
     rotation_matrix = affine_matrix[:3, :3]
     x_axis, y_axis, z_axis = rotation_matrix[:, 0], rotation_matrix[:, 1], rotation_matrix[:, 2]
     axial_threshold = 0.99
