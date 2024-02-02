@@ -4,7 +4,6 @@ from setuptools import setup, find_packages
 here = os.path.abspath(os.path.dirname(__file__))
 
 requires = [
-    'yaxil==0.9.10',
     'pyaml',
     'argparse',
     'pandas',
