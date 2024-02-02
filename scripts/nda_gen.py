@@ -30,7 +30,7 @@ def main():
     parser.add_argument('--reface-info',
         help='Pass the name of the software used to reface T1w images')
     parser.add_argument('--echo-times',
-        help='Pass in list of echo times for T1 scans, if applicable (e.g. .00181,.00525,.00628)')
+        help='Path to YAML file with series descriptions and associated echo times')
     args = parser.parse_args()
 
     """
@@ -165,13 +165,12 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     return current_row
 
 def get_echo_times(json_data, args):
-    if 'T1' in json_data['SeriesDescription']:
-        if args.echo_times:
-            return args.echo_times
-        else:
-            return json_data['EchoTime']
-    else:
-        return json_data['EchoTime']
+    if args.echo_times:
+        echos_yaml = yaml.safe_load(open(args.echo_times))
+        all_series_descriptions = echos_yaml['echo_times']
+        for description in all_series_descriptions:
+            if json_data['SeriesDescription'] == description:
+                return all_series_descriptions[description]
 
 def get_slice_timing(json_data):
     try:
