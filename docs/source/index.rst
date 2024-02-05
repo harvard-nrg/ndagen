@@ -14,10 +14,12 @@ NDAGEN is a command line tool that generates a properly formatted csv file for u
 .. image:: images/nda_logo.png
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
    :caption: Contents:
    
-   UserGuide
+   xnat
+   developers
+   xnattagger
 
 Indices and tables
 ==================
