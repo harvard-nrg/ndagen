@@ -1,11 +1,6 @@
-User Documentation
-=======================
-.. _XNAT: https://doi.org/10.1385/NI:5:1:11
-.. _T1w: https://tinyurl.com/hhru8ytz
-.. _prequal: https://github.com/MASILab/PreQual
-.. _qsiprep: https://qsiprep.readthedocs.io/en/latest/
-.. _installation: developers.html#hpc-installation
-.. _FreeSurfer: https://surfer.nmr.mgh.harvard.edu/fswiki/DownloadAndInstall
+User Guide
+==========
+.. _NDA: https://nda.nih.gov/
 
 .. note::
     This documentation assumes a basic understanding of the command line. Here's a quick (and free!) crash `course <https://www.codecademy.com/learn/learn-the-command-line>`_ if needed.
