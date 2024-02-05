@@ -17,7 +17,7 @@ NDAGEN is a command line tool that generates a properly formatted csv file for u
    :maxdepth: 1
    :caption: Contents:
    
-   User Guide
+   UserGuide
 
 Indices and tables
 ==================
