@@ -20,8 +20,8 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('-v',
-        help='See verbose output')
+    parser.add_argument('-v', '--verbose', action='store_true',
+        help='See verbose logging')
     parser.add_argument('--source-files', type=Path, required=True,
         help='Path to NIFTI Files to be uploaded')
     parser.add_argument('--key-file', required=True,
