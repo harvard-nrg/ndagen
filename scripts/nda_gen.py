@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 import logging
 import yaml
 import re
+import ndagen
 import ndagen.config as config
 import os
 from datetime import datetime
@@ -19,6 +20,8 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     parser = ArgumentParser()
+    parser.add_argument('-v'
+        help='See verbose output')
     parser.add_argument('--source-files', type=Path, required=True,
         help='Path to NIFTI Files to be uploaded')
     parser.add_argument('--key-file', required=True,
@@ -32,6 +35,9 @@ def main():
     parser.add_argument('--echo-times',
         help='Path to YAML file with series descriptions and associated echo times')
     args = parser.parse_args()
+
+    configure_logging(args.verbose)
+    logger.info('Welcome to ndagen version %s', ndagen.version())
 
     """
     This script will go row by row in building the final csv/dataframe. Every row represents a nifti file that will be uploaded
@@ -246,7 +252,7 @@ def validate_date(input_date):
         parsed_date = datetime.strptime(input_date, '%m/%d/%Y')
         return input_date
     except ValueError:
-        print('The date on the key file csv is not in valid format. Please change it to MM-DD-YYYY format and try again. Exiting.')
+        logger.error('The date on the key file csv is not in valid format. Please change it to MM-DD-YYYY format and try again. Exiting.')
         sys.exit(1)
 
 def get_image_extent4(nifti_file, json_data):
@@ -260,7 +266,7 @@ def get_image_extent4(nifti_file, json_data):
 def get_image_extent3(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    if 'T1' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
+    if 'MPR' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
         return round(dimensions[0] * json_data['SliceThickness'])  
     else:
         return round(dimensions[2] * json_data['SliceThickness'])
@@ -275,7 +281,7 @@ def get_image_extent2(nifti_file, json_data):
 def get_image_extent1(nifti_file, json_data):
     nifti_img = nib.load(nifti_file)
     dimensions = nifti_img.header.get_data_shape()
-    if 'T1' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
+    if 'MPR' in json_data['SeriesDescription'] or 'T2' in json_data['SeriesDescription']:
         return round(dimensions[2] * json_data['SliceThickness'])
     else:
         return round(dimensions[0] * json_data['SliceThickness'])
@@ -290,7 +296,7 @@ def get_image_dimensions(nifti_file):
 
 def add_reface_info(json, args):
     if args.reface_info:
-        if 'T1' in json['SeriesDescription']:
+        if 'MPR' in json['SeriesDescription'] or 'T2' in json['SeriesDescription']:
             return args.reface_info
     else:
         return ''
@@ -308,7 +314,7 @@ def get_scan_type(json_file, source_files_dir):
 
     if 'T2' in json_file['SeriesDescription']:
         return 'MR structural (T2)'
-    elif 'T1' in json_file['SeriesDescription'] or 'MPR' in json_file['SeriesDescription']:
+    elif 'MPR' in json_file['SeriesDescription']:
         return 'MR structural (T1)'
     elif 'FMAP' in json_file['SeriesDescription']:
         return 'Field Map'
@@ -326,7 +332,7 @@ def get_image_description(json_file, source_files_dir):
 
     if 'T2' in json_file['SeriesDescription']:
         return 'MRI_T2'
-    elif 'T1' in json_file['SeriesDescription'] or 'MPR' in json_file['SeriesDescription']:
+    elif 'MPR' in json_file['SeriesDescription']:
         return 'MRI_T1_MEMPR'
     elif 'FMAP' in json_file['SeriesDescription']:
         return 'MRI_fieldmap'
@@ -352,7 +358,7 @@ def keep_after_first_non_alphanumeric(input_string):
 
 def add_row_to_final_df(subject_key, row_data, final_df):
 
-    print(f'Adding data for scan {row_data[6]}')
+    logger.info(f'Adding data for scan {row_data[6]}')
 
     final_df.loc[len(final_df.index)] = row_data
 
@@ -363,6 +369,19 @@ def write_dataframe_to_csv(final_df, args):
     filename = f'nda_upload_file_{todays_date}.csv'
     output_path = os.path.join(args.source_files, filename)
     final_df.to_csv(output_path, index=False)
+    logger.info(f'{filename} written to {args.source_files}')
+
+
+def configure_logging(verbose):
+    level = logging.INFO
+    if verbose:
+        level = logging.DEBUG
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
 
 
 
