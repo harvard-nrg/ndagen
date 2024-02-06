@@ -1,604 +1,164 @@
 User Guide
 ==========
 .. _NDA: https://nda.nih.gov/
+.. _ndagen: https://github.com/harvard-nrg/ndagen
 
 .. note::
     This documentation assumes a basic understanding of the command line. Here's a quick (and free!) crash `course <https://www.codecademy.com/learn/learn-the-command-line>`_ if needed.
 
-Tagging your scans
-------------------
-For *DWIQC* to discover Diffusion and Fieldmap scans to process, you need to add notes to those scans in `XNAT`_. This can either be done via the XNAT interface or through the xnattagger `command line tool <https://github.com/harvard-nrg/xnattagger>`_. To tag via the XNAT interface, you can add notes using the ``Edit`` button located within the ``Actions`` box on the MR Session report page.
+Background Info
+---------------
+Welcome to the user docs! Hopefully this documentation can help you tackle the gargantuan task of uploading data to the NIMH Data Archive (`NDA`_).
 
-========= ================================  ===========================================================
-Type      Example series                    Note
-========= ================================  ===========================================================
-DWI       ``UKbioDiff_ABCDseq_ABCDdvs``     ``#DWI_MAIN_001, #DWI_MAIN_002, ..., #DWI_MAIN_N``
-PA_FMAP   ``UKbioDiff_ABCDseq_DistMap_PA``  ``#DWI_FMAP_PA_001, #DWI_FMAP_PA_002, ..., #DWI_FMAP_PA_N``
-AP_FMAP   ``UKbioDiff_ABCDseq_DistMap_AP``  ``#DWI_FMAP_AP_001, #DWI_FMAP_AP_002, ..., #DWI_FMAP_AP_N``
-========= ================================  ===========================================================
+`ndagen`_ is a python command line tool that's meant to streamline the process of uploading neuroimaging data to the `NDA`_. Generally, NIMH is only interested in the NIFTI files derived from raw dicoms. NIMH also requires a csv file containing metadata to be uploaded along with the converted NIFTIs. NIMH has very strict parameters for the accompanying csv file, including required column names. `ndagen`_ automates a large portion of creating the csv file with limited manual invervention from the user.
 
-The image below displays an MR Session report page with populated notes.
 
-.. note::
-   Note that if a ``DWI`` scan has corresponding ``PA`` and ``AP`` scans, they should be assigned matching numbers. For example, ``#DWI_MAIN_001`` would correspond to ``#DWI_FMAP_PA_001`` and ``#DWI_FMAP_AP_001``.
-
-.. image:: images/xnat-scan-notes.png
-
-xnattagger
-------------
-xnattagger automates the process of tagging scans in your XNAT project. xnattagger can optionally be run in the *get* and *tandem* modes of *DWIQC* using the ``--run-tagger`` argument. The default tagging convention is the same as seen here (and above), but can be configured to user specifications. Please see the `xnattagger documentation <xnattagger.html>`_ for details. 
-
-================= =======
-DWI scan          run
-================= =======
-``#DWI_MAIN_001`` 1
-``#DWI_MAIN_002`` 2
-``#DWI_MAIN_999`` 999
-================= =======
-
-Running the pipeline
---------------------
-For the time being, *DWIQC* can only be run outside of XNAT on a High Performance Computing system (or a beefed up local machine). Please see the developer documentation for `installation`_ details before proceeding.
-
-Overview
-^^^^^^^^^
-With *DWIQC* and it's necessary containers installed, you're ready to analyze some diffusion data! Let's start by giving you a broad idea of what *DWIQC* does. 
-
-*DWIQC* was designed with the goal of speeding up the quality check workflow of diffusion weighted imaging data. Ideally, *DWIQC* would be run on subjects while the study is ongoing as to help researchers catch problems (excessive motion, acquisition issues, etc.) as they happen, rather than discovering them after the data has been collected and the problems cannot be rectified. That being said, running *DWIQC* on previously acquired data can certainly provide helpful information. 
-
-*DWIQC* is built on the `prequal`_ and `qsiprep`_ processing packages. Both of these tools are excellent in their own right. We found that by running both of them, we can maximize our understanding of the data quality and glean additional key insights. Please take the necessary time to understand both tools and the theoretical approach they take to analyzing diffusion data. You may find that you only want to use one of them in your analysis (which is possible using the ``--sub-tasks`` command). *DWIQC* was built completely in python and we welcome anyone to peruse the `codebase <https://github.com/harvard-nrg/dwiqc>`_ and make build suggestions (hello, pull requests!).
-
-get, process and tandem modes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-*DWIQC* is broken down into four different "modes". As you saw in the `installation`_ section, the *install-containers* mode is used upon initial setup of your *DWIQC* environment. *get*, *process* and *tandem* modes are used once everything has been properly installed and you're ready to start working with the data. We'll start by looking at *get* mode.
-
-.. note::
-        The following sections assume you've activated your python virtual environment as demonstrated in the `installation`_ section. Shown again here:
+Installing ndagen
+-----------------
+If you are a fasse user at Harvard, accessing ndagen is as simple as running:
 
 .. code-block:: shell
 
-    source dwiqc/bin/activate
+    module load venv/ndagen
 
-get mode
-^^^^^^^^
-.. note::
-    *get* mode is only applicable if you have an XNAT instance (such as CBS Central) you're going to interact with. Please feel free to skip to the `process <#process-mode>`_ mode section if you're only going to use *DWIQC* outside of XNAT.
+All other users can install ndagen using a `pip` (or whatever package manager you prefer) command:
 
-get: Overview
-"""""""""""""
+.. code-block:: shell
+  
+    pip install ndagen
 
-*get* mode functions as a way to download data from XNAT to your local compute environment. *get* mode's primary feature is the ability to download data and convert it to BIDS format. Take a look at the official `docs <https://bids-specification.readthedocs.io/en/stable/>`_ if you're unfamiliar with BIDS.
 
-Before using *get* mode, I strongly recommend creating an `xnat_auth alias <https://yaxil.readthedocs.io/en/latest/xnat_auth.html>`_ using the excellent `yaxil <https://yaxil.readthedocs.io/en/latest/>`_ python library. It's not stictly necessary to do so, but it will make your life easier. Example code will use an xnat alias. yaxil comes as a part of the *DWIQC* `installation <developers.html#hpc-installation>`_ (yaxil is a *DWIQC* dependency). 
+Verify that it installed correctly by running ``nda_gen.py --help``.
 
-get: Config File
-""""""""""""""""
+The CSV File
+------------
+The csv file that NDA requires is comprised of scan metadata, ranging from scan dimensions to the dicom conversion software used. The good news is that a big chunk of the csv can be generated from pulling information from the json files and NIFTI file headers. However, there are some fields that need a bit of help from the user, which get passed to ndagen as command-line arguments. Let's dive into those below!
 
-Diffusion imaging is a burgeoning field with huge potential to deepen our understanding of the brain. While exciting, it also means that acquisition parameters, study designs, and theoretical analysis frameworks vary greatly. We've decided to make heavy use of yaml config files to accomodate as many approaches as possible. Take a look at the example config file below (`download it <https://raw.githubusercontent.com/harvard-nrg/dwiqc/main/example.yaml>`_ or copy/paste into text editor).
+The Key File
+^^^^^^^^^^^^
+There is certain information for each NDA upload that is unique to each research center and study and must be supplied by the user. ndagen requires that this information be passed to it as a csv file. More specifically, there are 5 columns that should be in the csv file for each subject being uploaded (written EXACTLY as shown here): **subjectkey, src_subject_id, interview_date, interview_age, sex**
 
-This kind of config file could be used when the diffusion data is not acquired with dedicated fieldmaps. In this case, there are reverse polarity (labeled here as "revpol") or reverse phase encode direction scans (usually consisting of 4-8 volumes) being acquired that correspond with the "main" (or primary) diffusion scans that consist of many more volumes. During processing, volumes will be extracted from both the "revpol" and "main" scans to create fieldmaps with FSL's topup tool.
+The ``subjectkey`` column is the NDA-issued 12 character ID for that specific subject (so they can be tracked across studies).
 
-Let's unpack this example config file a bit more. The top line with *"dwiqc"* should be left alone (*DWIQC* needs it there as a point of reference). *"dwi_main_a"* on line 2 is an example of what you might want to name a certain type of scan you've acquired, though the specific name here doesn't matter as long as it is unique. Nested underneath *"dwi_main_a"* on line 3 is the *"tag"* element. It should correspond to the tag you've inserted into the note field for a particular scan using *xnattagger* (or manually). In this example, *get* mode will look for **#dwi_main_a** (plus any number or other characters associated with it, case insensitive). As long as **#dwi_main_a** is found in the note field of a scan, it will be considered a match. 
+The ``src_subject_id`` column is an arbitrary subject number starting from 1 to N (number of subjects being uploaded).
 
-The rest of the elements found nested under *"dwi_main_a"* are used for generating BIDS-compliant file names and structure. *"bids_subdir"* on line 5 refers to the directory that a scan with the **#dwi_main_a** tag should be placed in. This element has significant implications for downstream processing. *Scans that serve as fieldmaps, either dedicated or as "revpol", should be placed into the BIDS fmap directory*. Otherwise, all scans should be placed into the dwi directory. The *"direction"* element on line 7 refers to the phase encoding direction of the scan. It will either be *AP* or *PA*. 
-
-Finally, the *"acquisition_group"* element serves as a means of grouping "main" and "revpol" scans together. For example, a certain study may be acquiring 4 "main" diffusion scans and 2 "revpol" scans. As mentioned earlier, volumes will be extracted from both "revpol" scans and "main" scans to create fieldmaps. As such, you want to be sure that the correct "revpol" and "main" scans are associated with each other. If the first acquired "revpol" scan corresponds to "main" scans 1 and 2, you wouldn't want that "revpol" scan to be used to create fieldmaps for "main" scans 3 and 4, or "main" scans 1 and 4, and so on. *"acquisition_group"* helps us pair scans together to ensure that field maps are being generated properly. In the example below, "main" and "revpol" scans are grouped by using the letters *A* and *B*, but you can use whatever convention you'd like as long as it's consistent.
-
-Only the *"tag"* and *"bids_subdir"* elements are required in the config file. If you have no need for *"direction"* or *"acquisition_group"*, you don't have to use them!
+The ``interview_date`` is the date of the scan, though have the accurate year is the only requirement. Day and month can be arbitrarily chosen. 
 
 .. note::
-    Indentation, hyphens, spaces, and colons are very important to the yaml structure. Be sure to maintain the exact structure seen here when editing.
+    ``interview_date`` must be written in MM/DD/YYYY format!
 
-Phew! I would recommend pulling up this example config file in a text editor and looking at it side-by-side with the above explanation.
+The ``interview_age`` column is the age of the subject at the time of the scan in months. (e.g. a 20 year old's age would appear as 240 here).
+
+The ``sex`` column is the sex of the subject written as F or M.
+
+So the csv key file could look something like this:
+
+.. csv-table::
+
+    subjectkey,src_subject_id,interview_date,interview_age,sex
+    NDA*********,P1,01/01/2023,288,M
+    NDA*********,P2,01/01/2023,312,M
+    NDA*********,P3,01/01/2023,336,F
+    NDA*********,P4,01/01/2023,252,M
+    NDA*********,P5,01/01/2023,264,M
+    NDA*********,P6,01/01/2024,228,M
+    NDA*********,P7,01/01/2024,300,F
+    NDA*********,P8,01/01/2024,276,M
+    NDA*********,PN,01/01/????,???,?
+
+So when you're running ``nda_gen.py``, you'll pass the **full** path to the key csv file to the ``--key-file`` argument like this:
+
+.. code-block:: shell
+    
+    nda_gen.py --key-file /home/user/imager/nda_key_file.csv
+
+.. note::
+    Don't worry about copying and keeping track of the full nda_gen.py command. There's a section further down dedicated to that; the example above is just a visual aid.
+
+The Tasks File
+^^^^^^^^^^^^^^
+One of the required columns for fMRI data is the task number. The task number is generated by NDA when you register a task (e.g. MOTOR) on the NDA website. ndagen can automatically insert the task number into the final csv file by using a yaml config file which contains task name and task number pairs. Here's what it looks like as of February 2024:
 
 .. code-block:: yaml
 
-    dwiqc:
-      dwi_main_a:
-        tag:
-          - .*(^|\s)#dwi_main_a(?P<run>_\d+)?(\s|$).*
-        bids_subdir:
-          - dwi
-        direction:
-          - AP
-        acquisition_group:
-          - A
-      dwi_main_b:
-        tag:
-          - .*(^|\s)#dwi_main_b(?P<run>_\d+)?(\s|$).*
-        bids_subdir:
-          - dwi
-        direction:
-          - AP
-        acquisition_group:
-          - B
-      revpol_a:
-        tag:
-          - .*(^|\s)#dwi_revpol_a(?P<run>_\d+)?(\s|$).*
-        bids_subdir:
-          - fmap
-        direction:
-          - PA
-        acquisition_group:
-          - A
-      revpol_b:
-        tag:
-          - .*(^|\s)#dwi_revpol_b(?P<run>_\d+)?(\s|$).*
-        bids_subdir:
-          - fmap
-        direction:
-          - PA
-        acquisition_group:
-          - B
-      t1w:
-        tag:
-          - .*(^|\s)ANAT_1.0_ADNI(?P<run>_\d+)?(\s|$).*
-        bids_subdir:
-          - anat
+    tasks:
+      EPROJ: 2337
+      NBACK: 2348
+      PAIN: 2351
+      FALSBEL: 2350
+      LANG: 2344
+      MOTOR: 2347
+      VISME: 2352
+      VODDK: 2353
+      REST: 2349
 
-get: Required Arguments
-"""""""""""""""""""""""
+ndagen will look at the name of each NIFTI file and if one of the tasks above is in the name, it will insert the associated task number in the `experiment_id` column in the final csv file. For example, if a given NIFTI file name has `MOTOR` in it (e.g. NDA123456-sess01-run01-MOTOR1.nii.gz, ndagen will insert 2347 into the `experiment_id` column for that row.
 
+The file above will be used by default so there's no need to pass an argument if your task(s) are included. However, if you need to add a new task-number pair you can copy or `download <https://github.com/harvard-nrg/ndagen/blob/main/ndagen/config/tasks.yaml>`_ this file and add the pair to it. Be sure to follow the same formatting as shown above! You can pass your new tasks file to ndagen as a command line argument: ``--task-list /full/path/to/file/tasks.yaml`` 
 
-*get* mode requires four arguments: `1) ---label` `2) ---bids-dir` `3) ---xnat-alias` `4) ---download-config`
+The Echo Time File
+^^^^^^^^^^^^^^^^^^
+Many studies include the acquisition of multi-echo T1 scans and NDA requires all of the TEs to be reported in the csv upload file. Unfortunately, popular dicom to NIFTI conversion software (looking at you, dcm2niix) does not include all the TEs of multi-echo scans in the json sidecar files. As such, users with multi-echo scans will need to make use of ndagen's ``--echo-times`` argument. Like the tasks file above, the ``--echo-times`` argument is the full path to a yaml file that could look something like this:
 
-| 1. ``--label`` refers to the XNAT MR Session ID, which is found under XNAT PROJECT ---> SUBJECT ---> MR_SESSION
+.. code-block:: yaml
 
-.. image:: images/MR-Session.png
+    echo_times:                                                                                                                                                                                   
+      T1w_MPR_vNav_4e_RMS: .00181,.0036,.00539,.00718
+      T1_MEMPRAGE_1.2mm_p4_RMS: .00157,.00339,.00521,.00703
 
-| 2. ``--bids-dir`` should be the **absolute** path to the desired download directory. If the directory doesn't exist, it will be created.
+The `echo_times.yaml` file consists of key-value pairs where the key is the `SeriesDescription` field from the json file and the value is the echo times listed in succession, separated by commas (unit is seconds). It's important that the `SeriesDescription` (e.g. T1w_MPR_vNav_4e_RMS) portion mirrors **exactly** what is in the `SeriesDescription` of the json file. Otherwise, ndagen will not detect it.
+
+Using the ``--echo-times`` argument could look something like this:
 
 .. code-block:: shell
 
-    /usr/home/username/project_data/MR_Session
+    nda_gen.py --echo-times /full/path/to/echo/times/file.yaml
 
-``cd`` into the desired directory and execute ``pwd`` to get a directory's absolute path.
-
-| 3. ``--xnat-alias`` is the alias containing credentials associated with your XNAT instance. It can be created in a few `steps <https://yaxil.readthedocs.io/en/latest/xnat_auth.html>`_ using yaxil.
-
-| 4. ``--download-config`` is the **absolute** path to the yaml config file that tells *DWIQC* which tags it should look for (see the `xnattagger docs <xnattagger.html>`_) and the `config file <#get-config-file>`_ section of get mode for more tagging details.
-
-
-get: Executing the Command
-""""""""""""""""""""""""""
-
-Command Template:
+Source Files Argument
+^^^^^^^^^^^^^^^^^^^^^
+NDA requires that all the NIFTIs being uploaded are found in the same directory. This required argument for ndagen is simply the full path to the directory where the NIFTIs are located:
 
 .. code-block:: shell
 
-    dwiQC.py get --label <MR_SESSION> --bids-dir <PATH_TO_BIDS_DIR> --xnat-alias <ALIAS> --download-config <PATH_TO_CONFIG_FILE>
+    nda_gen.py --source-files /full/path/to/all/niftis
 
-Command Example:
+Reface Info Argument
+^^^^^^^^^^^^^^^^^^^^
+Refacing T1 data has become standard practice at many research centers. At the time of writing, refacing T1 images does not include adding any metadata about the refacing to the associated json file. To report the refacing software used to NDA, ndagen has the ``--reface-info`` argument. Here's an example use case:
 
 .. code-block:: shell
 
-    dwiQC.py get --label PE201222_230719 --bids-dir /users/nrg/PE201222_230719 --xnat-alias ssbc --download-config /users/nrg/dwiqc_config.yaml
+    nda_gen.py --reface-info "Refaced using NITRC mri_deface_0.3; https://www.nitrc.org/projects/mri_reface"
 
 .. note::
-    Ensure that every MR_Session has its own dedicated BIDS download directory. *DWIQC* will not run properly otherwise. 
 
-get: Expected Output
-""""""""""""""""""""
+    Notice the double quotes being placed around the input. Bash doesn't like whitespace, so you have to tell it to ignore it!
 
-After running *DWIQC* *get* you should see two new directories and one new file under your BIDS dir similar to what's shown here:
+NDA Config Argument
+^^^^^^^^^^^^^^^^^^^
+This is an argument that you likely will not have to use. There is a yaml file used by default to generate all the column names in the upload csv file. You will only need to use this argument if NDA changes or adds required variables/colnames to the upload csv. Here's a `link <https://github.com/harvard-nrg/ndagen/blob/main/ndagen/config/variables.yaml>`_ to the yaml file for reference.
 
-.. image:: images/get-output.png
+Running ndagen
+--------------
+Phew! Now that we've talked about the ndagen's background info and different arguments, let's take a look at actually running it. 
 
-*dataset_description.json* conatains very basic information about the downloaded data. It's required by BIDS format. *sourcedata* contains the raw dicoms of all the downloaded scans. *sub-PE201222* (will differ for you) contains the downloaded data in proper BIDS format. If you enter the directory, you should see the subject session, then three more directories: *anat*, *dwi* and *fmap*. Those directories contain the MR Session's respective anatomical, diffusion and diffusion field map data. If one of the directories is missing or empty, verify that your session's scans have been tagged correctly and that the data is downloadable.
+As is mentioned above, ndagen only has two required arguments: ``--source-files`` and ``--key-file``. ``--nda-config`` and ``--task-list`` are fairly stable and there's a decent change you will never have to mess with them. However, you will likely make use of ``--reface-info`` and ``--echo-times`` at some point. Below are a couple of examples; one is a general template for most nda_gen.py use cases while the other is a more concrete example.
 
-get: Common Errors
-""""""""""""""""""
-
-The most common *get* mode error doesn't necessarily look like an error on the surface, meaning that there won't be an **ERROR** message that pops up in your terminal. Usually, the error will be discovered when you check your download directory and find that not all of your desired data was downloaded. This problem almost always stems from *get* mode being unable to find matches in the scans' note fields on XNAT. Check your configuration file and be sure that it matches the tagging convention you're using on XNAT.
-
-get: Advanced Usage
-"""""""""""""""""""
-
-There are a couple *get* mode optional arguments that are worth noting. 
-
-| 1. By default, *get* mode will run `xnattagger <xnattagger.html>`_ on the provided MR Session. Pass the ``--no-tagger`` argument if you'd like to turn off that functionality.
- 
-| 2. If you would like to see what data will be downloaded from XNAT without actually downloading it, pass the ``--dry-run`` argument.
-
-get: All Arguments
-""""""""""""""""""
-
-===================== ========================================  ========
-Argument              Description                               Required
-===================== ========================================  ========
-``--label``           XNAT Session Label                        Yes
-``--bids-dir``        Path to BIDS download directory           Yes
-``--xnat-alias``      Alias for XNAT Project                    Yes
-``--download-config`` Configuration file for downloading scans  Yes
-``--project``         Project Name                              No
-``--no-tagger``       Turn off *xnattagger*                     No
-``--dry-run``         Generate list of to-be-downloaded scans   No
-===================== ========================================  ========
-
-process mode
-^^^^^^^^^^^^
-process: Overview
-"""""""""""""""""
-
-With your data successfully downloaded using *get* mode (or organized in BIDS format through other means) you are ready to run *DWIQC*. We recommended running *DWIQC* in an HPC (High Performance Computing) environment rather than on a local machine. *DWIQC* will run both `prequal`_ and `qsiprep`_ using gpu compute nodes by default. However, it is possible to turn off gpu-dependent features by using the ``--no-gpu`` argument. *DWIQC* may require up to 20GB of RAM if run on a local/non-gpu machine so please allocate resources appropriately. 
-
-process: Required Arguments
-"""""""""""""""""""""""""""
-
-*process* mode requires 5 arguments:
-
-`1) ---sub` `2) ---ses` `3) ---bids-dir` `4) ---partition` `5) ---fs-license`
-
-| 1. ``--sub`` is the subject's identifier in the BIDS hierarchy. If you've used *get* mode to download your data it will be in the ``--bids-dir`` directory. In the case of the example we're using here, it would be PE201222. Remember not to include the "sub-" prefix! 
-
-| 2. ``--ses`` is the specific session for your subject according to BIDS format. *get* mode will place a session direcory one step below the sub-SUBJECT directory and combine the subject and session identifier from XNAT. The example above downloaded data under the XNAT label PE201222_230719, so the session directory will be called ses-PE201222230719. See example below. *get* mode will remove any non alpha-numeric characters in the ``--label`` argument when creating the session name.
- 
-.. image:: images/session-directory.png
-
-| 3. ``--bids-dir`` is the same directory passed to the ``--bids-dir`` argument in *get* mode. It's the absolute path to the directory where the data is in BIDS format.
-
-| 4. ``--partition`` refers to the name of the partition or cluster where the sbatch jobs will be submitted to. This is generally just the name of your HPC system (e.g. fasse, fasse_gpu, Armis, etc.) 
-
-| 5. ``--fs-license`` should be the **absolute** path to the FreeSurfer license file in your environment. You can obtain a license by downloading `FreeSurfer`_.
-
-process: Executing the Command
-""""""""""""""""""""""""""""""
-
-Command Template:
+Command Template
+^^^^^^^^^^^^^^^^
 
 .. code-block:: shell
 
-    dwiQC.py process --sub <BIDS_SUBJECT> --ses <BIDS_SESSION> --bids-dir <PATH_TO_BIDS_DIR> --partition <HPC_NAME> --fs-license <PATH_TO_FREESURFER_LICENSE>
+    nda_gen.py --source-files /PATH/TO/ALL/NIFTIS --key-file /PATH/TO/KEY/FILE.csv --reface-info "REFACE SOFTWARE" --echo-times /PATH/TO/YAML/FILE.yaml
 
-Command Example:
-
-.. code-block:: shell
-
-    dwiQC.py process --sub PE201222 --ses PE201222230719 --bids-dir /users/nrg/PE201222_230719 --partition fasse_gpu --fs-license /home/apps/freesurfer/license.txt
-
-
-process: Expected Output
-""""""""""""""""""""""""
-
-*DWIQC* runtime varies based on available resources, size of data and desired processing steps. Users should expect one session to take 3-5 hours to complete prequal and 7-10 hours to complete qsiprep. Prequal and qsiprep are run in parallel, so total processing time rarely exceeds 10 hours. *DWIQC* also makes use of the FSL tool eddy quad. Eddy quad runs a series of quality assesment commands to generate images and quantitative metric tables. Eddy quad doesn't take more than 10 minutes to run in most cases. A successful *DWIQC* run will contain output from all three of these software packages. 
-
-**Prequal Output:**
-
-To find the prequal pdf report, navigate to the ``--bids-dir`` directory you passed to *process* mode. The pdf will be located under several layers of directories:
-
-derivatives ---> dwiqc-prequal ---> subject_dir ---> session_dir ---> sub_session_dir_run__dwi ---> OUTPUTS ---> PDF ---> dtiQA.pdf
-
-Download an example :download:`here <examples/dtiQA.pdf>`.
-
-**Qsiprep Output:**
-
-To find the qsiprep html report, navigate to the ``--bids-dir`` directory you passed to *process* mode. The html file will be located under several layers of directories:
-
-derivatives ---> dwiqc-qsiprep ---> subject_dir ---> session_dir ---> sub_session_dir_run__dwi ---> qsiprep_output ---> qsiprep ---> sub-SUBJECT-imbedded_images.html
-
-Download an example :download:`here <examples/sub-MS881355-imbedded_images.html>`.
-
-**Eddy Quad Output:**
-
-To find the eddy quad pdf report, navigate to the ``--bids-dir`` directory you passed to *process* mode. The pdf file will be located under several layers of directories:
-
-derivatives ---> dwiqc-prequal ---> subject_dir ---> session_dir ---> sub_session_dir_run__dwi ---> OUTPUTS ---> EDDY ---> SUBJECT_SESSION.qc ---> qc.pdf
-
-Download an example :download:`here <examples/qc.pdf>`.
-
-process: Common Errors
-""""""""""""""""""""""
-
-A somewhat common error (affects about 5% of subjects) is an Eddy Volume to Volume registration error that looks something like this:
-
-.. image:: images/eddy-error.png
-
-This error means that the FSL tool ``eddy``, which both prequal and qsiprep use in their pipelines, could not find any volumes within a specific shell that did not have intensity outliers. There are three different approaches to solving this problem that have their respective implications: 
-
-| 1. Exclude that session from the larger dataset. This approach ensures that all data meet the same standard of stringency. 
-
-| 2. Change what FSL considers to be an outlier. *DWIQC* tells FSL that an outlier is anything more than 5 standard deviations from the mean. The user could change that to 6 standard deviations, which would increase the liklihood of eddy running successfully while keeping the same standard for all data. 
-
-| 3. Change the number of standard deviations to 6 only for the subjects that are being affected. The theoretical implications of this approach (or any others) are not explored in depth here and it is left to the user to make informed decisions.
-
-.. note:: 
-    This error generally only occurs in qsiprep.
-
-To adjust the number of standard deviations, edit a file in your ``--bids-dir`` called ``eddy_params_s2v_mbs.json`` that was created when you first ran *DWIQC*. Open the file and change the argument that says ``--ol_nstd=5`` to ``--ol_nstd=6``. Simply running *DWIQC* again will overwrite the ``eddy_params_s2v_mbs.json`` you just edited, so pass the ``--custom-eddy`` argument to *DWIQC* with the path to the newly edited ``eddy_params_s2v_mbs.json`` file.
+Command Example
+^^^^^^^^^^^^^^^
 
 .. code-block:: shell
 
-    dwiQC.py process --sub PE201222 --ses PE201222230719 --bids-dir /users/nrg/PE201222_230719 --partition fasse_gpu --fs-license /home/apps/freesurfer/license.txt --custom-eddy /users/nrg/PE201222_230719/eddy_params_s2v_mbs.json
+    nda_gen.py --source_files /users/home/nrg/studies/aging/all_niftis --key-file /users/home/nrg/studies/aging/subject_key_file.csv --reface-info "Refaced using NITRC mri_deface_0.3" --echo-times /users/home/nrg/studies/aging/echo_times.yaml
 
-process: Advanced Usage
-"""""""""""""""""""""""
+As ndagen runs you will see the name of each nifti file being added to the upload csv file printed out to the terminal window. It can take a few seconds or a few minutes depending on the number of files you're uploading. Once it's done, the output csv file will be placed in the ``--source-files`` argument directory and be named `nda_upload_file-YYYY-MM-DD.csv`. 
 
-Only a few of the many possible *process* mode arguments will be discussed here. 
+And that's it! Please feel free to contact Daniel with any questions: danielasay@fas.harvard.edu
 
-| 1. ``--qsiprep-config`` and ``--prequal-config`` allow you to customize the arguments passed to qsiprep and prequal. These are the default `qsiprep config <https://github.com/harvard-nrg/dwiqc/blob/main/dwiqc/config/qsiprep.yaml>`_ and `prequal config <https://github.com/harvard-nrg/dwiqc/blob/main/dwiqc/config/prequal.yaml>`_ arguments being passed. Using these config files as a template, you can customize your prequal and qsiprep commands. Example usage: ``--prequal-config /users/nrg/PE201222_230719/prequal.yaml``
-
-| 2. ``--xnat-upload`` indicates that the output from *DWIQC* should be uploaded to your XNAT project. ``--xnat-alias`` (see *get* mode) must be passed for this argument to work. Example usage: ``--xnat-upload`` (just passing the argument is sufficient)
-
-| 3. ``--output-resolution`` allows you to specify the resolution of images created by qsiprep. The default is the same as the input data. Example usage: ``--output-resolution 1.0``
-
-| 4. ``--no-gpu`` enables users without access to a gpu node to run *DWIQC*. Note that some advanced processing features are not available without gpu computing. Example usage: ``--no-gpu`` (just passing the argument is sufficient)
-
-| 5. ``--sub-tasks`` is used to run either just qsiprep or prequal. Example usage: ``--sub-tasks qsiprep``
-
-| 6. ``--custom-eddy`` is used to pass custom FSL eddy parameters to qsiprep as noted under *Common Errors*. Example usage: ``--custom-eddy /users/nrg/PE201222_230719/eddy_params_s2v_mbs.json``
-
-process: All Arguments
-""""""""""""""""""""""
-
-Fill in with box of all possible arguments for *process*.
-
-=============================== ==============================================  ========
-Argument                        Description                                     Required
-=============================== ==============================================  ========
-``--sub``                       Subject label (excluding "sub-")                Yes
-``--ses``                       Session label (excluding "ses-")                Yes
-``--bids-dir``                  Path to BIDS directory                          Yes
-``--partition``                 Name of partition where jobs will be submitted  Yes
-``--fs-license``                Path to FreeSurfer License                      Yes
-``--run``                       BIDS Run Number                                 No
-``--output-resolution``         Resolution of Output Data                       No
-``--prequal-config``            Path to prequal command .yaml file              No
-``--qsiprep-config``            Path to qsiprep command .yaml file              No
-``--no-gpu``                    Turn off GPU functionality                      No
-``--sub-tasks``                 Pass only prequal or qsiprep to be run          No
-``--xnat-alias``                Alias for XNAT project                          No
-``--xnat-upload``               Indicate if results should be uploaded to XNAT  No
-``--artifacts-dir``             Location for generated reports                  No
-``--custom-eddy``               Path to customized eddy_params.json file        No
-=============================== ==============================================  ========
-
-tandem mode
-^^^^^^^^^^^
-
-tandem: Overview
-""""""""""""""""
-
-*tandem* mode combines the best of both worlds and runs both *get* and *process* modes in a single command. *tandem* mode is only applicable for users hosting data on an XNAT instance and is useful for scripting and batching large numbers of subject data. See `get mode <#get-mode>`_ and `process mode <#process-mode>`_ documentation for further explanation of their functionality.
-
-tandem: Required Arguments
-""""""""""""""""""""""""""
-
-*tandem* uses a combination of arguments from *get* and *process*:
-
-`1) ---label` `2) ---bids-dir` `3) ---xnat-alias` `4) ---partition` `5) ---fs-license`
-
-| 1. ``--label`` refers to the XNAT MR Session ID, which is found under XNAT PROJECT ---> SUBJECT ---> MR_SESSION
-
-.. image:: images/MR-Session.png
-
-| 2. ``--bids-dir`` should be the **absolute** path to the desired download directory. If the directory doesn't exist, it will be created.
- 
-| 3. ``--xnat-alias`` is the alias containing credentials associated with your XNAT project. It can be created using yaxil `documentation <https://yaxil.readthedocs.io/en/latest/xnat_auth.html>`_.
-
-| 4. ``--partition`` refers to the name of the partition or cluster where the sbatch jobs will be submitted to. This is generally just the name of your HPC system (e.g. fasse, fasse_gpu, Armis, etc.)
-
-| 5. ``--fs-license`` should be the **absolute** path to the FreeSurfer license file in your environment. You can obtain a license by downloading `FreeSurfer`_.
-
-tandem: Executing the Command
-"""""""""""""""""""""""""""""
-
-Command Template:
-
-.. code-block:: shell
-
-    dwiQC.py tandem --label <bids_subject> --bids-dir <path_to_bids_dir> --xnat-alias <xnat-alias> --partition <HPC_name> --fs-license <path_to_freesurfer_license>
-
-Command Example:
-
-.. code-block:: shell
-
-    dwiQC.py tandem --label PE201222_230719 --bids-dir /users/nrg/PE201222_230719 --xnat-alias ssbc --partition fasse_gpu --fs-license /home/apps/freesurfer/license.txt
-
-tandem: Expected Output
-"""""""""""""""""""""""
-
-Please see process mode `expected output <#process-expected-output>`_ documentation regarding expected output.
-
-tandem: Common Errors
-"""""""""""""""""""""
-
-Please see `get mode common errors <#get-common-errors>`_ and `process mode common errors <#process-common-errors>`_ documentation regarding common errors.
-
-tandem: Advanced Usage
-""""""""""""""""""""""
-
-All the advanced usage arguments for *tandem* mode are the same as the *get* mode and *process* mode advanced usage arguments. They appear here as well for convenience.
-
-| 1. By default, *tandem* mode will run `xnattagger <xnattagger.html>`_ on the provided MR Session. If you'd like to turn off that functionality, simply pass the ``--no-tagger`` argument.
-
-| 2. Related to xnattagger is the `--xnat-config` argument. This argument refers to a config file found `here <https://github.com/harvard-nrg/dwiqc/blob/main/dwiqc/config/dwiqc.yaml>`_ which *DWIQC* uses to find the appropriately tagged scans in your XNAT project. The config file, written in the yaml format, uses regular expressions (regex) to find the desired scans. The expressions used in the default config file follow the convention depicted `above <#tagging-your-scans>`_. If your scans are tagged using a different convention, create a yaml file similar in structure to the example given here and pass it to ``--xnat-config`` in *tandem* mode. 
- 
-| 3. If you would like to see what data will be downloaded from XNAT without actually downloading it, pass the ``--dry-run`` argument. You will also have to specify an output json file: ``-o test.json``. That json file will contain metadata about the scans *tandem* mode would download. This can be useful for testing.
-
-| 4. ``--qsiprep-config`` and ``--prequal-config`` allow you to customize the arguments passed to qsiprep and prequal. By default, these are the `qsiprep config <https://github.com/harvard-nrg/dwiqc/blob/main/dwiqc/config/qsiprep.yaml>`_ and `prequal config <https://github.com/harvard-nrg/dwiqc/blob/main/dwiqc/config/prequal.yaml>`_ arguments being passed. Using these config files as a template, you can customize your prequal and qsiprep commands. Example usage: ``--prequal-config /users/nrg/PE201222_230719/prequal.yaml``
-
-| 5. ``--xnat-upload`` indicates that the output from *DWIQC* should be uploaded to your XNAT project. ``--xnat-alias`` (see *get* mode) must be passed for this argument to work. Example usage: ``--xnat-upload`` (just passing the argument is sufficient)
-
-| 6. ``--output-resolution`` allows you to specify the resolution of images created by qsiprep. The default is the same as the input data. Example usage: ``--output-resolution 1.0``
-
-| 7. ``--no-gpu`` enables users without access to a gpu node to run *DWIQC*. Note that some advanced process features are not available without gpu computing. Example usage: ``--no-gpu`` (just passing the argument is sufficient)
-
-| 8. ``--sub-tasks`` is used to run either just qsiprep or prequal. Example usage: ``--sub-tasks qsiprep``
-
-| 9. ``--custom-eddy`` is used to pass custom FSL eddy parameters to qsiprep as noted under `common errors <#process-common-errors>`_. Example usage: ``--custom-eddy /users/nrg/PE201222_230719/eddy_params_s2v_mbs.json``
-
-
-tandem: All Arguments
-"""""""""""""""""""""
-
-======================= ==============================================  ========
-Argument                Description                                     Required
-======================= ==============================================  ========
-``--label``             XNAT Session Label                              Yes
-``--bids-dir``          Path to BIDS download directory                 Yes
-``--xnat-alias``        Alias for XNAT Project                          Yes
-``--partition``         Name of partition where jobs will be submitted  Yes
-``--fs-license``        Path to FreeSurfer License                      Yes
-``--project``           Project Name                                    No
-``--xnat-config``       Configuration file for downloading scans        No
-``--no-tagger``         Turn off *xnattagger*                           No
-``--dry-run``           Generate list of to-be-downloaded scans         No
-``-o``                  Path to ``--dry-run`` json output file          No
-``--run``               BIDS Run Number                                 No
-``--output-resolution`` Resolution of Output Data                       No
-``--prequal-config``    Path to prequal command .yaml file              No
-``--qsiprep-config``    Path to qsiprep command .yaml file              No
-``--no-gpu``            Turn off GPU functionality                      No
-``--sub-tasks``         Pass only prequal or qsiprep to be run          No
-``--xnat-alias``        Alias for XNAT project                          No
-``--xnat-upload``       Indicate if results should be uploaded to XNAT  No
-``--artifacts-dir``     Location for generated reports                  No
-``--custom-eddy``       Path to customized eddy_params.json file        No
-======================= ==============================================  ========
-
-Understanding the Report Page
------------------------------
-
-.. note::
-      This section is only relevant for users uploading *DWIQC* output to an XNAT instance.
-
-
-Left pane
-^^^^^^^^^
-The left pane is broken up into several distinct sections. Each section will be described below.
-
-Summary
-"""""""
-The ``Summary`` pane orients the user to what MR Session they're currently looking at and various processing details.
-
-.. image:: images/xnat-acq-left-summary.png
-
-============== ==================================
-Key            Description
-============== ==================================
-MR Session     MR Session label
-Date Processed Processing date
-PA Fmap Scan   PA Fieldmap used
-AP Fmap Scan   AP Fieldmap used
-DWI Scan       DWI scan used
-============== ==================================
-
-SNR/CNR Metrics
-"""""""""""""""
-The ``SNR/CNR Metrics`` pane displays SNR/CNR metrics computed *for each individual shell*.
-
-.. image:: images/xnat-acq-left-snr-metrics.png
-
-=========== ======================= =================================================
-Metric      From                    Description                              
-=========== ======================= =================================================
-B0 SNR      Eddy Quad (Prequal/FSL) Signal-to-noise ratio for B0 Shell
-BN CNR      Eddy Quad (Prequal/FSL) Contrast-to-noise ratio for each shell
-=========== ======================= =================================================
-
-.. note::
-      Anywhere you see "Eddy Quad (Prequal/FSL)" means that FSL's Eddy Quad tool was run on Prequal output.
-
-Motion Metrics
-""""""""""""""
-The ``Motion Metrics`` pane displays motion metrics computed over dwi scan(s).
-
-.. image:: images/xnat-acq-left-motion.png
-
-================= ======================= ===========================================================
-Metric            From                    Description
-================= ======================= ===========================================================
-Avg Abs Motion    Eddy Quad (Prequal/FSL) Estimated amount of all motion in any direction
-Avg Rel Motion    Eddy Quad (Prequal/FSL) Estimated motion relative to initial head position
-Avg X Translation Eddy Quad (Prequal/FSL) Estimated X translation motion
-Avg Y Translation Eddy Quad (Prequal/FSL) Estimated Y translation motion
-Avg Z Translation Eddy Quad (Prequal/FSL) Estimated Z translation motion
-================= ======================= ===========================================================
-
-Files
-"""""
-The ``Files`` pane contains the most commonly requested files. Clicking on any of these files will display that file in the browser.
-
-.. image:: images/xnat-acq-left-files.png
-
-======================= ======================= ======================================================
-File                    From                    Description
-======================= ======================= ======================================================
-B0 Average              Eddy Quad (Prequal/FSL) BO Shell Average Image
-Brain Mask              Qsiprep                 Gray Matter, White Matter and Pial Boundaries
-FA Map                  Prequal                 Fractional Anisotropy Map
-MD Map                  Prequal                 Mean Diffusivity Map
-Eddy Outlier Sices      Prequal                 Plot of Slices with Motion Outliers
-T1 Registration         Qsiprep                 GIF of T1w image to Template Registration
-Denoise                 Qsiprep                 GIF of DWI Image Pre and Post Denoising
-Motion Plot             Eddy Quad (Prequal/FSL) Translational and rotational motion, displacement
-Prequal Report          Prequal                 Prequal PDF Report
-Eddy Quad Report        Eddy Quad (Prequal/FSL) Eddy Quad PDF Report
-Qsiprep Report          Qsiprep                 Qsiprep HTML Report
-Carpet Plot             Qsiprep                 Maximum Framewise Displacement Plot
-======================= ======================= ======================================================
-
-.. note:: 
-      Clicking on any of the ``Report`` files will open the complete report in a new tab in your browser for viewing. You can also download them from the new tab.
-
-Tabs
-^^^^
-To the right of the `left pane <#left-pane>`_ you'll find a tab container. The following section explains the contents of each tab.
-
-Images
-""""""
-The ``Images`` tab displays a zoomed out view of the FA and MD image maps, motion plots, brain mask, motion outlier slices, average shell images and a maximum framewise displacement plot.
-
-.. image:: images/logo.png
-
-Clicking on an image within the ``Images`` tab will display a larger version of that image in the browser.
-
-.. image:: images/motion-plot.png
-
-Prequal Report tab
-""""""""""""""""""
-The ``Prequal Report`` tab displays the complete Prequal PDF report.
-
-.. image:: images/prequal-tab.png
-
-Eddy Quad Report Tab
-""""""""""""""""""""
-The ``Eddy Quad Report`` tab displays key metrics and figures from the FSL Eddy command. 
-
-.. image:: images/eddy-quad-tab.png
-
-Qsiprep Report Tab
-""""""""""""""""""
-The ``Qsiprep Report`` tab displays the complete Qsiprep HTML report.
-
-.. image:: images/qsiprep-tab.png
-
-All Stored Files
-""""""""""""""""
-The ``All Stored Files`` tab contains a list of *every file* stored by *DWIQC*.
-
-.. image:: images/all-stored-files-tab.png
-
-.. note::
-   Clicking on a file within the ``All Stored Files`` tab will download that file.
-
-================================= =================================================
-File                              Description
-================================= =================================================
-B0 Image                          B0 Volume/Shell
-BN Images                         Images from Each Shell
-FA Map                            Fractional Anisotropy Map
-MD Map                            Mead Diffusivity Map
-Eddy Outlier Slices               Plot of Slices with Motion Outliers
-Motion Translations               Plot of motion translations across DWI scan
-Motion Rotations                  Plot of motion rorations acorss DWI scan
-Motion Displacements              Plot of motion displacements across DWI scan
-Prequal PDF Report                Complete Prequal Report
-Eddy Quad PDF Report              Complete Eddy Quad Report (run on Prequal output)
-Qsiprep HTML Report               Complete Qsiprep Report in HTML Format
-Qsiprep PDF Report                Complete Qsiprep Report in PDF Format
-T1 Registration                   GIF of T1w image to Template Registration
-Complete Motion Plot              Motion plot including transl, rot, displacements
-Brain Mask/Segmentations          Gray Matter/White Matter Segmentations and Mask
-B0 Volume                         B0 Volume from DWI Scan
-================================= =================================================
