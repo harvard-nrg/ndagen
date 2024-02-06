@@ -140,7 +140,7 @@ def add_image_info(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.append(get_image_extent2(nifti_file, json_data)) # for image_extent2 column
     current_row.append(get_image_extent3(nifti_file, json_data)) # for image_extent3 column    
     current_row.append(get_image_extent4(nifti_file, json_data)) # for image_extent4 column
-    current_row.append('Time')
+    current_row.append(get_extent4_type(nifti_file, json_data)) # for extent4_type column
 
     return current_row
 
@@ -169,6 +169,14 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.extend(['' for _ in range(32)]) # for the final 32 columns, starting with procdate and endign with year_mta
 
     return current_row
+
+
+def get_extent4_type(nifti_file, json_data):
+    is_functional = check_for_functional(nifti_file):
+    if is_functional is False:
+        return ''
+    else:
+        return 'Time'
 
 def get_echo_times(json_data, args):
     if args.echo_times:
@@ -203,8 +211,7 @@ def get_task_name(file, tasks):
     for task in tasks:
         if task in file:
             return task
-        else:
-            return ''
+    return ''
 
 def get_software(json_data):
     conversion_software = json_data['ConversionSoftware']
