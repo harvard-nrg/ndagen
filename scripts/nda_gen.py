@@ -172,7 +172,7 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
 
 
 def get_extent4_type(nifti_file, json_data):
-    is_functional = check_for_functional(nifti_file):
+    is_functional = check_for_functional(nifti_file)
     if is_functional is False:
         return ''
     else:
