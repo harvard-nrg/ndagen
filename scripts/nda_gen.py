@@ -168,9 +168,16 @@ def get_echo_times(json_data, args):
     if args.echo_times:
         echos_yaml = yaml.safe_load(open(args.echo_times))
         all_series_descriptions = echos_yaml['echo_times']
+        echo_times = None
         for description in all_series_descriptions:
             if json_data['SeriesDescription'] == description:
-                return all_series_descriptions[description]
+                echo_times = all_series_descriptions[description]
+        if not echo_times:
+            return json_data['EchoTime']
+        else:
+            return echo_times
+    else:
+        return json_data['EchoTime']
 
 def get_slice_timing(json_data):
     try:
