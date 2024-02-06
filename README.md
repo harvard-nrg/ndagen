@@ -26,3 +26,7 @@ options:
                         
   --echo-times ECHO_TIMES
                         Path to YAML file with series descriptions and associated echo times
+
+# Documenation
+
+Check out the user docs here: https://ndagen.readthedocs.io/en/latest/index.html
