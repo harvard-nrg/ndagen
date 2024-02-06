@@ -2,7 +2,7 @@
 
 Ndagen is a python command line tool to generate the spreadsheet necessary for uploading data to the NIMH Data Archive (NDA)
 
-# USAGE
+# Usage
 
 nda_gen.py [-h] --source-files SOURCE_FILES --key-file KEY_FILE [--nda-config NDA_CONFIG] [--task-list TASK_LIST]
                   [--reface-info REFACE_INFO] [--echo-times ECHO_TIMES]
