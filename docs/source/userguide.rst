@@ -4,7 +4,7 @@ User Guide
 .. _ndagen: https://github.com/harvard-nrg/ndagen
 
 .. note::
-    This documentation assumes a basic understanding of the command line. Here's a quick (and free!) crash `course <https://www.codecademy.com/learn/learn-the-command-line>`_ if needed.
+    This documentation assumes a basic understanding of the command line. Here's a quick (and free!) `crash course <https://www.codecademy.com/learn/learn-the-command-line>`_ if needed.
 
 Background Info
 ---------------
