@@ -347,13 +347,16 @@ def get_image_description(json_file, source_files_dir):
         return 'fMRI'
 
 
-def keep_all_before_non_alphanumeric(string):
-    match = re.search(r'\W', string)
+def keep_all_before_non_alphanumeric(input_string):
+    """
+    Remove all characters in the string starting at the first non-letter/digit encountered.
+    """
+    match = re.search(r'[^a-zA-Z0-9]', input_string)
     if match:
         index = match.start()
-        return string[:index]
+        return input_string[:index]
     else:
-        return string
+        return input_string
 
 def keep_after_first_non_alphanumeric(input_string):
     pattern = r'[^a-zA-Z0-9](.*)$'
