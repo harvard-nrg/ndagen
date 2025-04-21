@@ -154,6 +154,7 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.append('') # image_unit5 column
     current_row.extend([json_data['SliceThickness'], json_data['SliceThickness'], json_data['SliceThickness']]) # for image_resolution1, image_resolution2 and image_resolution3 columns
     current_row.append(get_image_resolution4(nifti_file)) # for image_resolution4 column
+    current_row.append('') # for image_resolution5 column
     current_row.append(json_data['SliceThickness']) # for image_slice_thickness column
     current_row.append(get_image_orientation(nifti_file)) # for image_orientation column
     current_row.extend(['' for _ in range(12)]) # for qc_outcome, qc_description, qc_fail_quest_reason, decay_correction, frame_end_times, frame_end_unit, frame_start_times, frame_start_unit, pet_isotope pet_tracer, time_diff_inject_to_image and time_diff_units columns
@@ -166,7 +167,7 @@ def add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file):
     current_row.append(get_slice_timing(json_data)) # for slice_timing column
     current_row.extend(['' for _ in range(3)]) # for bvek_bval_files, bvecfile, bvalfile columns
     current_row.append(json_data['DeviceSerialNumber']) # for deviceserialnumber column
-    current_row.extend(['' for _ in range(32)]) # for the final 32 columns, starting with procdate and endign with year_mta
+    current_row.extend(['' for _ in range(71)]) # for the final 32 columns, starting with procdate and endign with year_mta
 
     return current_row
 

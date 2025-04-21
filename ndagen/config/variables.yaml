@@ -48,6 +48,7 @@ nda_variables:
   - image_resolution2
   - image_resolution3
   - image_resolution4
+  - image_resolution5
   - image_slice_thickness
   - image_orientation
   - qc_outcome
@@ -106,3 +107,42 @@ nda_variables:
   - type_of_microscopy
   - excitation_wavelength
   - year_mta
+  - timepoint_label
+  - aqi
+  - fd_mean
+  - dvars_std
+  - tsnr
+  - fetal_age
+  - fetal_age_type
+  - accession_number
+  - ageyears
+  - iti_onset
+  - stim1
+  - stim2
+  - stim1_side
+  - stim1_magnitude
+  - stim2_magnitude
+  - choice_side
+  - computer_choice
+  - stim1_outcome
+  - session_fmri
+  - choice_fmri
+  - outcome_fmri
+  - rt_fmri
+  - task_version
+  - block_sv
+  - trial_num
+  - options_onset
+  - cue_onset
+  - interval_onset
+  - monitor_onset
+  - session_det
+  - gbc
+  - vtca
+  - vtcan
+  - eventname
+  - taskname
+  - abbrev_taskname
+  - vendor
+  - gbc_r
+  - gbc_region
