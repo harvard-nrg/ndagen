@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/Users/danielasay/ndagen_debug/ndagen/bin/python3
 
 import sys
 import nibabel as nib
@@ -14,6 +14,7 @@ import ndagen.config as config
 import os
 from datetime import datetime
 import numpy as np
+import pdb
 
 logger = logging.getLogger('nda_gen')
 logging.basicConfig(level=logging.INFO)
@@ -62,40 +63,49 @@ def main():
 
     os.chdir(args.source_files)
 
+    sub_keys_and_ses = get_key_and_ses(key_file)
+
     ### construct all variables for each row, add each row to final dataframe
 
-    for file in source_files:
+    for subject_key, num_sessions in sub_keys_and_ses.items():
 
-        subjectkey = keep_all_before_non_alphanumeric(file)
+        for session in range(1, num_sessions+1):
 
-        current_row = []
+            sub_and_ses_files = get_sub_and_ses_files(subject_key, session, source_files)
 
-        nifti_file = file.replace('.json', '.nii.gz')
+            #pdb.set_trace()
 
-        # get column info from the input key file
-        current_row = add_key_file_info(subjectkey, key_file, file, current_row)
+            for file in sub_and_ses_files:
 
-        # add the image info
+                #subjectkey = keep_all_before_non_alphanumeric(file)
 
-        current_row = add_image_info(subjectkey, file, current_row, args, tasks, nifti_file)
+                current_row = []        
 
-        # add remaining variables/columns
+                nifti_file = file.replace('.json', '.nii.gz')       
 
-        current_row = add_final_cols(subjectkey, file, current_row, args, tasks, nifti_file)
+                # get column info from the input key file
+                current_row = add_key_file_info(subject_key, key_file, file, current_row, session)
 
+                # add the image info        
 
-        final_dataframe = add_row_to_final_df(subjectkey, current_row, final_dataframe)
+                current_row = add_image_info(subject_key, file, current_row, args, tasks, nifti_file)
+                # add remaining variables/columns       
 
+                current_row = add_final_cols(subject_key, file, current_row, args, tasks, nifti_file)
+            
+
+                final_dataframe = add_row_to_final_df(subject_key, current_row, final_dataframe)
 
     write_dataframe_to_csv(final_dataframe, args)
 
 
-def add_key_file_info(subjectkey, key_file, orig_file, current_row):
+def add_key_file_info(subjectkey, key_file, orig_file, current_row, session):
     """
     Gather info from the key file for this file
     """
+    matching_rows = key_file.index[key_file['subjectkey'] == subjectkey].tolist()
 
-    key_row = key_file.index[key_file['subjectkey'] == subjectkey].tolist()[0]
+    key_row = matching_rows[session - 1]
 
     current_row.append(subjectkey)
     current_row.append(key_file.at[key_row, 'src_subject_id']) # for src_subject_id column
@@ -220,6 +230,18 @@ def get_software(json_data):
 
     return f'{conversion_software} {software_version}'
 
+def get_sub_and_ses_files(subject_key, session, all_files):
+    file_subset = []
+    for file in all_files:
+        if subject_key not in file:
+            continue
+        ses_str_0 = f'ses-0{str(session)}'
+        ses_str = f'ses-{str(session)}'
+        if ses_str not in file and ses_str_0 not in file:
+            continue
+        file_subset.append(file)
+    return file_subset
+
 def get_image_orientation(nifti_file):
     affine_matrix = nib.load(nifti_file).affine
     rotation_matrix = affine_matrix[:3, :3]
@@ -294,7 +316,15 @@ def get_image_extent1(nifti_file, json_data):
     else:
         return round(dimensions[0] * json_data['SliceThickness'])
 
-
+def get_key_and_ses(key_file):
+    subject_keys = {}
+    for sub_key in key_file['subjectkey'].tolist():
+        if sub_key in subject_keys.keys():
+            value = (subject_keys[sub_key] + 1)
+            subject_keys[sub_key] = value
+        else:
+            subject_keys[sub_key] = 1
+    return subject_keys
 
 def get_image_dimensions(nifti_file):
     nifti_img = nib.load(nifti_file)
